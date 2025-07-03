@@ -6,3 +6,4 @@ python-bidi
 pytz
 beautifulsoup4
 webdriver-manager
+lxml
