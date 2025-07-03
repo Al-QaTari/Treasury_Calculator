@@ -1,0 +1,8 @@
+streamlit
+pandas
+selenium
+arabic-reshaper
+python-bidi
+pytz
+beautifulsoup4
+webdriver-manager
