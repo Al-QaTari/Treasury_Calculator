@@ -12,50 +12,24 @@ jobs:
       contents: write
 
     steps:
-      - name: 1. Check out repository
+      - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: 2. Set up Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: 3. Install dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
-      - name: 4. List files BEFORE running scraper
-        run: |
-          echo "--- Files in repository root: ---"
-          ls -l
-
-      - name: 5. Run scraper
+      - name: Run scraper
         run: python scraper.py
 
-      - name: 6. List files AFTER running scraper
-        run: |
-          echo "--- Files in repository root after script: ---"
-          ls -l
-      
-      - name: 7. Check for changes with git status
-        id: git_status
-        run: |
-          # The output of this will be 'true' if there are changes, otherwise 'false'
-          echo "changed=$(if git status --porcelain | grep -q .; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
-
-      - name: 8. Commit and push if changes exist
-        # This step will only run if the previous step found changes
-        if: steps.git_status.outputs.changed == 'true'
-        run: |
-          echo "Changes detected. Committing and pushing..."
-          git config --global user.name "CBE Data Scraper Bot"
-          git config --global user.email "actions@github.com"
-          git add cbe_historical_data.db
-          git commit -m "Update CBE historical data [BOT]"
-          git push
-      
-      - name: 9. Report if no changes were found
-        # This step will only run if no changes were detected
-        if: steps.git_status.outputs.changed == 'false'
-        run: echo "No changes detected in cbe_historical_data.db. Nothing to commit."
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update CBE historical data [BOT]"
+          file_pattern: cbe_historical_data.db
