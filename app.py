@@ -1,3 +1,4 @@
+# app.py
 import streamlit as st
 import pytz
 from datetime import datetime, timedelta
@@ -9,8 +10,14 @@ import constants as C
 
 st.set_page_config(layout="wide", page_title="حاسبة أذون الخزانة", page_icon="🏦")
 load_css('css/style.css') 
-
 db_manager = DatabaseManager()
+
+def load_data_into_session():
+    st.session_state.df_data, st.session_state.last_update = db_manager.load_latest_data()
+
+if 'df_data' not in st.session_state:
+    load_data_into_session()
+data_df = st.session_state.df_data
 
 st.markdown(f"""
 <div class="app-title">
@@ -19,15 +26,11 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-st.session_state.df_data, st.session_state.last_update = db_manager.load_latest_data()
-data_df = st.session_state.df_data
-
 top_col1, top_col2 = st.columns([2, 1])
-
 with top_col1:
     with st.container(border=True):
         st.subheader(prepare_arabic_text("📊 أحدث العوائد المعتمدة"), anchor=False)
-        if not data_df.empty and C.TENOR_COLUMN_NAME in data_df.columns:
+        if not data_df.empty and C.TENOR_COLUMN_NAME in data_df.columns and "البيانات الأولية" not in st.session_state.last_update:
             sorted_tenors = sorted(data_df[C.TENOR_COLUMN_NAME].unique())
             cols = st.columns(len(sorted_tenors) if sorted_tenors else 1)
             tenor_icons = {91: "⏳", 182: "🗓️", 273: "📆", 364: "🗓️✨"}
@@ -37,22 +40,30 @@ with top_col1:
                     rate = data_df[data_df[C.TENOR_COLUMN_NAME] == tenor][C.YIELD_COLUMN_NAME].iloc[0]
                     st.metric(label=prepare_arabic_text(f"{icon} أجل {tenor} يوم"), value=f"{rate:.3f}%")
         else:
-            st.warning(prepare_arabic_text("لم يتم تحميل البيانات أو أن البيانات غير مكتملة."))
+            st.info(prepare_arabic_text("في انتظار ورود البيانات من البنك المركزي..."))
 
 with top_col2:
     with st.container(border=True):
         st.subheader(prepare_arabic_text("📡 حالة البيانات"), anchor=False)
-        st.write(f"{prepare_arabic_text('**آخر تحديث مسجل:**')} {st.session_state.last_update}")
-        try:
-            last_update_dt = datetime.strptime(st.session_state.last_update, "%d-%m-%Y %H:%M")
-            cairo_tz = pytz.timezone('Africa/Cairo')
-            now_cairo = datetime.now(cairo_tz)
-            if (now_cairo - last_update_dt) > timedelta(days=1):
-                 st.warning(prepare_arabic_text("تنبيه: البيانات المعروضة قديمة وسيتم تحديثها تلقائيًا."), icon="⚠️")
-            else:
-                 st.success(prepare_arabic_text("البيانات المعروضة محدثة."), icon="✅")
-        except (ValueError, TypeError):
-             st.info(prepare_arabic_text("يتم تحديث البيانات تلقائيًا بشكل دوري."), icon="ℹ️")
+        last_update_message = st.session_state.last_update
+        st.write(f"{prepare_arabic_text('**آخر تحديث مسجل:**')} {last_update_message}")
+        if st.button("🔄 تحديث عرض البيانات", use_container_width=True):
+            load_data_into_session()
+            st.rerun()
+
+        if "البيانات الأولية" in last_update_message:
+            st.warning(prepare_arabic_text("يقوم الروبوت بجلب البيانات لأول مرة. قد يستغرق الأمر بضع دقائق. يرجى تحديث الصفحة لاحقًا أو استخدام زر التحديث."), icon="⏳")
+        else:
+            try:
+                last_update_dt = datetime.strptime(last_update_message, "%d-%m-%Y %H:%M")
+                cairo_tz = pytz.timezone('Africa/Cairo')
+                now_cairo = datetime.now(cairo_tz)
+                if (now_cairo.date() - last_update_dt.date()).days > 0:
+                     st.warning(prepare_arabic_text("تنبيه: البيانات المعروضة قديمة. سيتم تحديثها تلقائيًا."), icon="⚠️")
+                else:
+                     st.success(prepare_arabic_text("البيانات المعروضة محدثة لليوم الحالي."), icon="✅")
+            except (ValueError, TypeError):
+                 st.info(prepare_arabic_text("يتم تحديث قاعدة البيانات تلقائيًا بشكل دوري."), icon="ℹ️")
         st.link_button(prepare_arabic_text("🔗 فتح موقع البنك"), C.CBE_DATA_URL, use_container_width=True)
 
 st.divider()
