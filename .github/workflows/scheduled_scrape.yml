@@ -26,9 +26,8 @@ jobs:
       - name: Run scraper
         run: python scraper.py
 
-      - name: Commit and push if there are changes
-        run: |
-          git config --global user.name "CBE Data Scraper Bot"
-          git config --global user.email "actions@github.com"
-          git add cbe_historical_data.db || exit 0
-          git diff --staged --quiet || (git commit -m "Update CBE historical data" && git push)
+     - name: Commit and push changes
+    uses: stefanzweifel/git-auto-commit-action@v5
+    with:
+      commit_message: "Update CBE historical data [BOT]"
+      file_pattern: cbe_historical_data.db
