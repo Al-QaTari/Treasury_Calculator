@@ -1,6 +1,5 @@
 # scraper.py
 from db_manager import DatabaseManager
-from cbe_scraper import fetch_data_from_cbe
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
