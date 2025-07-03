@@ -41,7 +41,8 @@ def fetch_data_from_cbe(_db_manager: DatabaseManager):
     """Fetches T-bill data using a highly robust parsing method that targets the 'Accepted' bids table."""
     driver = setup_driver()
     if not driver:
-        return
+        # If driver setup fails, raise an exception to fail the workflow
+        raise RuntimeError("Failed to setup Selenium driver.")
 
     try:
         logging.info(f"Navigating to {C.CBE_DATA_URL}")
@@ -53,12 +54,10 @@ def fetch_data_from_cbe(_db_manager: DatabaseManager):
         all_dfs = pd.read_html(StringIO(page_source))
         logging.info(f"Pandas found {len(all_dfs)} table(s) on the page.")
 
-        # --- MODIFIED LOGIC TO FIND THE CORRECT TABLE ---
         ACCEPTED_BIDS_KEYWORD = "المقبولة"
         target_df = None
         for df in all_dfs:
             df_string = df.to_string()
-            # The new condition checks for BOTH keywords to ensure it's the right table
             if not df.empty and C.YIELD_ANCHOR_TEXT in df_string and ACCEPTED_BIDS_KEYWORD in df_string:
                 target_df = df.copy()
                 logging.info("Found the correct 'Accepted Bids' table.")
@@ -67,7 +66,6 @@ def fetch_data_from_cbe(_db_manager: DatabaseManager):
         if target_df is None:
             raise ValueError("Parsing failed: Could not find the 'Accepted Bids' table.")
 
-        # --- Robust Data Extraction Logic ---
         tenors_list = []
         for col in target_df.columns:
             numbers = re.findall(r'\d+', str(col))
@@ -102,6 +100,12 @@ def fetch_data_from_cbe(_db_manager: DatabaseManager):
 
     except Exception as e:
         logging.error(f"An error occurred during scraping: {e}", exc_info=True)
+        with open("error_page.html", "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
+        logging.info("Saved the page source to error_page.html for debugging.")
+        # --- السطر الجديد والمهم ---
+        # هذا السطر سيجبر الـ workflow على الفشل بشكل صحيح
+        raise e
     finally:
         if driver:
             driver.quit()
