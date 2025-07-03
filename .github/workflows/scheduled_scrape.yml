@@ -8,6 +8,12 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    
+    # --- الأسطر الجديدة التي يجب إضافتها ---
+    permissions:
+      contents: write
+    # ------------------------------------
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
