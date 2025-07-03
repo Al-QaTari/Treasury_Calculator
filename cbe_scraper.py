@@ -3,7 +3,7 @@ import pandas as pd
 from io import StringIO
 from datetime import datetime
 from selenium import webdriver
-from selenium.common.exceptions import WebDriverException, TimeoutException
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
@@ -35,14 +35,13 @@ def setup_driver():
         return driver
     except Exception as e:
         logging.error(f"FATAL: Could not initialize Chrome driver: {e}")
-        return None
+        raise e
 
 def fetch_data_from_cbe(_db_manager: DatabaseManager):
-    """Fetches T-bill data using a highly robust parsing method that targets the 'Accepted' bids table."""
+    """Fetches T-bill data using a targeted, two-table parsing method."""
     driver = setup_driver()
     if not driver:
-        # If driver setup fails, raise an exception to fail the workflow
-        raise RuntimeError("Failed to setup Selenium driver.")
+        return
 
     try:
         logging.info(f"Navigating to {C.CBE_DATA_URL}")
@@ -50,62 +49,67 @@ def fetch_data_from_cbe(_db_manager: DatabaseManager):
         
         WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         page_source = driver.page_source
-        
-        all_dfs = pd.read_html(StringIO(page_source))
-        logging.info(f"Pandas found {len(all_dfs)} table(s) on the page.")
+        soup = BeautifulSoup(page_source, 'lxml')
 
-        ACCEPTED_BIDS_KEYWORD = "المقبولة"
-        target_df = None
-        for df in all_dfs:
-            df_string = df.to_string()
-            if not df.empty and C.YIELD_ANCHOR_TEXT in df_string and ACCEPTED_BIDS_KEYWORD in df_string:
-                target_df = df.copy()
-                logging.info("Found the correct 'Accepted Bids' table.")
-                break
-        
-        if target_df is None:
-            raise ValueError("Parsing failed: Could not find the 'Accepted Bids' table.")
+        # --- New, Final, and Correct Parsing Logic ---
 
-        tenors_list = []
-        for col in target_df.columns:
-            numbers = re.findall(r'\d+', str(col))
-            if numbers:
-                tenors_list.append(int(numbers[0]))
+        # 1. Find the "Results" (النتائج) table to get the tenors from its header
+        results_header = soup.find(lambda tag: tag.name == 'h2' and 'النتائج' in tag.get_text())
+        if not results_header:
+            raise ValueError("Could not find the 'النتائج' (Results) header.")
         
-        logging.info(f"Extracted tenors from headers: {tenors_list}")
+        results_table = results_header.find_next('table')
+        if not results_table:
+            raise ValueError("Could not find the table following the 'Results' header.")
+            
+        results_df = pd.read_html(StringIO(str(results_table)))[0]
+        # Tenors are in the header, from the second column onwards
+        tenors_list = pd.to_numeric(results_df.columns[1:], errors='coerce').dropna().astype(int).tolist()
+        logging.info(f"Successfully extracted tenors from 'Results' table: {tenors_list}")
 
+        # 2. Find the "Accepted Bids" (العروض المقبولة) table to get the correct yields
+        accepted_bids_header = soup.find(lambda tag: tag.name in ['p', 'strong'] and 'العروض المقبولة' in tag.get_text())
+        if not accepted_bids_header:
+            raise ValueError("Could not find the 'العروض المقبولة' (Accepted Bids) header.")
+        
+        accepted_bids_table = accepted_bids_header.find_next('table')
+        if not accepted_bids_table:
+            raise ValueError("Could not find the table following the 'Accepted Bids' header.")
+
+        accepted_df = pd.read_html(StringIO(str(accepted_bids_table)))[0]
+        
+        # 3. Find the yield row within the "Accepted Bids" table
         yield_row_series = None
-        for index, row in target_df.iterrows():
+        for index, row in accepted_df.iterrows():
             if isinstance(row.iloc[0], str) and C.YIELD_ANCHOR_TEXT in row.iloc[0]:
                 yield_row_series = row
                 break
         
         if yield_row_series is None:
-            raise ValueError("Could not find the yield data row in the target table.")
-            
+            raise ValueError("Could not find the yield data row in the 'Accepted Bids' table.")
+        
+        # Extract the correct yields
         yields_list = pd.to_numeric(yield_row_series.iloc[1:len(tenors_list)+1], errors='coerce').dropna().astype(float).tolist()
-        logging.info(f"Extracted yields from data row: {yields_list}")
+        logging.info(f"Successfully extracted yields from 'Accepted Bids' table: {yields_list}")
 
+        # 4. Final validation and DataFrame creation
         if not tenors_list or len(tenors_list) != len(yields_list):
-            raise ValueError(f"Data mismatch after extraction: Tenors ({len(tenors_list)}), Yields ({len(yields_list)})")
+            raise ValueError(f"Final data mismatch: Tenors ({len(tenors_list)}), Yields ({len(yields_list)})")
 
+        # Create the final DataFrame and sort it by tenor
         final_df = pd.DataFrame({
             C.TENOR_COLUMN_NAME: tenors_list,
             C.YIELD_COLUMN_NAME: yields_list
-        })
+        }).sort_values(by=C.TENOR_COLUMN_NAME).reset_index(drop=True)
+        
         final_df[C.DATE_COLUMN_NAME] = datetime.now().strftime("%Y-%m-%d")
         
         _db_manager.save_data(final_df)
-        logging.info("Data successfully scraped and passed to be saved.")
+        logging.info("Data successfully scraped and saved.")
 
     except Exception as e:
         logging.error(f"An error occurred during scraping: {e}", exc_info=True)
-        with open("error_page.html", "w", encoding="utf-8") as f:
-            f.write(driver.page_source)
-        logging.info("Saved the page source to error_page.html for debugging.")
-        # --- السطر الجديد والمهم ---
-        # هذا السطر سيجبر الـ workflow على الفشل بشكل صحيح
-        raise e
+        raise e # Re-raise the exception to fail the workflow
     finally:
         if driver:
             driver.quit()
