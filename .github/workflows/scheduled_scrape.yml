@@ -33,3 +33,12 @@ jobs:
         with:
           commit_message: "Update CBE historical data [BOT]"
           file_pattern: cbe_historical_data.db
+
+      # --- الخطوة الجديدة والمهمة ---
+      - name: Upload Page Source Artifact on Failure
+        # هذه الخطوة ستعمل فقط في حالة فشل الخطوات السابقة
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-page-source
+          path: error_page.html
