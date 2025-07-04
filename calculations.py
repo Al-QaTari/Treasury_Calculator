@@ -5,7 +5,6 @@ def calculate_primary_yield(investment_amount, tenor, yield_rate, tax_rate):
     Calculates the net return for a primary T-bill investment and the real profit percentage.
     """
     if investment_amount <= 0:
-        # Return zeroed-out dictionary if investment is zero to avoid division errors
         return {
             "gross_return": 0, "tax_amount": 0, "net_return": 0,
             "total_payout": 0, "real_profit_percentage": 0
@@ -17,7 +16,6 @@ def calculate_primary_yield(investment_amount, tenor, yield_rate, tax_rate):
     net_return = gross_return - tax_amount
     total_payout = investment_amount + net_return
     
-    # Calculate the real profit percentage for the period
     real_profit_percentage = (net_return / investment_amount) * 100
     
     return {
@@ -31,6 +29,7 @@ def calculate_primary_yield(investment_amount, tenor, yield_rate, tax_rate):
 def analyze_secondary_sale(face_value, original_yield, original_tenor, holding_days, secondary_yield, tax_rate):
     """
     Analyzes the outcome of selling a T-bill on the secondary market.
+    Calculates the actual profit percentage for the holding period.
     """
     if not 1 <= holding_days < original_tenor:
         return {"error": "أيام الاحتفاظ يجب أن تكون أكبر من صفر وأقل من أجل الإذن الأصلي."}
@@ -42,14 +41,16 @@ def analyze_secondary_sale(face_value, original_yield, original_tenor, holding_d
     gross_profit = sale_price - original_purchase_price
     tax_amount = max(0, gross_profit * (tax_rate / 100.0))
     net_profit = gross_profit - tax_amount
-    annualized_yield = (net_profit / original_purchase_price) * (C.DAYS_IN_YEAR / holding_days) * 100 if holding_days > 0 else 0
-
+    
+    # Calculate the actual profit percentage for the holding period
+    period_yield = (net_profit / original_purchase_price) * 100 if original_purchase_price > 0 else 0
+    
     return {
         "error": None,
         "sale_price": sale_price,
         "gross_profit": gross_profit,
         "tax_amount": tax_amount,
         "net_profit": net_profit,
-        "annualized_yield": annualized_yield,
+        "period_yield": period_yield, # This is the new percentage for the period
         "original_purchase_price": original_purchase_price
     }
