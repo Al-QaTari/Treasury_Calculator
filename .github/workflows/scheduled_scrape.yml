@@ -3,7 +3,11 @@ name: Scrape Latest CBE Data
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 5 * * *'
+    # Rule 1: Run every hour from 14:00 to 20:00 UTC (5 PM to 11 PM Egypt Time) on Sunday and Monday.
+    - cron: '0 14-20 * * 0,1'
+    
+    # Rule 2: Run once at 5:00 AM UTC (8 AM Egypt Time) on all other days (Tue-Sat).
+    - cron: '0 5 * * 2-6'
 
 jobs:
   scrape:
@@ -33,12 +37,3 @@ jobs:
         with:
           commit_message: "Update CBE historical data [BOT]"
           file_pattern: cbe_historical_data.db
-
-      # --- الخطوة الجديدة والمهمة ---
-      - name: Upload Page Source Artifact on Failure
-        # هذه الخطوة ستعمل فقط في حالة فشل الخطوات السابقة
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: failed-page-source
-          path: error_page.html
