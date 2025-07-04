@@ -1,47 +1,48 @@
-# اسم سير العمل الذي سيظهر في قسم Actions
-name: Python CI Pipeline
+name: Python Code Quality Check
 
-# متى يتم تشغيل هذا الإجراء
 on:
   push:
-    branches: [ main ] # عند الدفع إلى الفرع الرئيسي
+    branches: [ main ]
   pull_request:
-    branches: [ main ] # عند عمل طلب دمج للفرع الرئيسي
+    branches: [ main ]
 
-# المهام التي سيتم تنفيذها
 jobs:
   build-and-test:
-    # سيتم تشغيل المهمة على أحدث نسخة من أوبنتو
     runs-on: ubuntu-latest
 
-    # خطوات التنفيذ بالترتيب
     steps:
       # 1. تحميل نسخة من الكود الخاص بك
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      # 2. إعداد بيئة عمل بايثون بالإصدار الذي تريده
+      # 2. إعداد بيئة عمل بايثون
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # 3. تثبيت المكتبات اللازمة (من ملف requirements.txt وأدوات الفحص)
+      # 3. تثبيت المكتبات اللازمة
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install ruff black pytest
 
-      # 4. فحص جودة الكود باستخدام ruff (بديل سريع لـ flake8)
+      # 4. فحص جودة الكود باستخدام ruff
       - name: Lint with ruff
-        run: ruff check .
+        run: ruff check . --fix
 
-      # 5. التأكد من تنسيق الكود باستخدام black
-      - name: Check formatting with black
-        run: black --check .
+      # 5. تنسيق الكود تلقائيًا باستخدام black
+      - name: Format code with black
+        run: black .
 
-      # 6. تشغيل الاختبارات للتأكد من أن كل شيء يعمل
-      # (يفترض أن لديك مجلد tests يحتوي على ملفات الاختبار)
+      # 6. حفظ التغييرات التي تمت تلقائيًا (إن وجدت)
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: Auto-format code with black and ruff"
+          branch: ${{ github.head_ref || github.ref_name }}
+
+      # 7. تشغيل الاختبارات للتأكد من أن كل شيء يعمل بعد التنسيق
       - name: Run tests with pytest
         run: pytest
