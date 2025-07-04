@@ -3,6 +3,7 @@ from bidi.algorithm import get_display
 import streamlit as st
 import os
 
+
 def prepare_arabic_text(text: str) -> str:
     """
     Handles Arabic text shaping for correct display in Streamlit widgets.
@@ -10,11 +11,12 @@ def prepare_arabic_text(text: str) -> str:
     if text is None:
         return ""
     try:
-        configuration = {'delete_harakat': True, 'support_ligatures': True}
+        configuration = {"delete_harakat": True, "support_ligatures": True}
         reshaped_text = arabic_reshaper.reshape(str(text), configuration)
         return get_display(reshaped_text)
     except Exception:
         return str(text)
+
 
 def load_css(file_path: str):
     """
