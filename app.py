@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import pytz
 from datetime import datetime, timedelta
@@ -10,6 +9,7 @@ import constants as C
 
 st.set_page_config(layout="wide", page_title="حاسبة أذون الخزانة", page_icon="🏦")
 load_css('css/style.css') 
+
 db_manager = DatabaseManager()
 
 def load_data_into_session():
@@ -27,6 +27,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 top_col1, top_col2 = st.columns([2, 1])
+
 with top_col1:
     with st.container(border=True):
         st.subheader(prepare_arabic_text("📊 أحدث العوائد المعتمدة"), anchor=False)
@@ -89,17 +90,31 @@ if calculate_button_main and selected_tenor_main is not None:
         yield_rate = yield_rate_row[C.YIELD_COLUMN_NAME].iloc[0]
         results = calculate_primary_yield(investment_amount_main, selected_tenor_main, yield_rate, tax_rate_main)
         with results_placeholder_main.container(border=True):
-            st.subheader(prepare_arabic_text(f"✨ تفاصيل أجل {selected_tenor_main} يوم"), anchor=False)
-            st.markdown(f'<p style="font-size: 1.0rem; color: #adb5bd;">{prepare_arabic_text("العائد الصافي بعد الضريبة")}</p><p style="font-size: 2.0rem; color: #49c57a; font-weight: 700;">{results["net_return"]:,.2f} {prepare_arabic_text("جنيه")}</p>', unsafe_allow_html=True)
-            st.markdown('<hr style="border-color: #495057;">', unsafe_allow_html=True)
-            st.markdown(f'<table style="width:100%; font-size: 1.0rem;"><tr><td style="padding-bottom: 8px;">{prepare_arabic_text("💰 المبلغ المستثمر")}</td><td style="text-align:left;">{investment_amount_main:,.2f} {prepare_arabic_text("جنيه")}</td></tr><tr><td style="padding-bottom: 8px; color: #8ab4f8;">{prepare_arabic_text("📈 العائد الإجمالي")}</td><td style="text-align:left; color: #8ab4f8;">{results["gross_return"]:,.2f} {prepare_arabic_text("جنيه")}</td></tr><tr><td style="padding-bottom: 15px; color: #f28b82;">{prepare_arabic_text(f"💸 ضريبة الأرباح ({tax_rate_main}%)")}</td><td style="text-align:left; color: #f28b82;">- {results["tax_amount"]:,.2f} {prepare_arabic_text("جنيه")}</td></tr></table>', unsafe_allow_html=True)
-            st.markdown(f'<div style="background-color: #495057; padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;"><span style="font-size: 1.1rem;">{prepare_arabic_text("🏦 إجمالي المستلم")}</span><span style="font-size: 1.2rem;">{results["total_payout"]:,.2f} {prepare_arabic_text("جنيه")}</span></div>', unsafe_allow_html=True)
+            st.subheader(prepare_arabic_text(f"✨ نتائج الاستثمار لأجل {selected_tenor_main} يوم"))
+            res_col1, res_col2 = st.columns(2)
+            res_col1.metric(
+                label=prepare_arabic_text(f"صافي الربح (لمدة {selected_tenor_main} يوم)"),
+                value=f"{results['net_return']:,.2f} جنيه"
+            )
+            res_col2.metric(
+                label=prepare_arabic_text("النسبة الفعلية للربح (عن الفترة)"),
+                value=f"{results['real_profit_percentage']:.3f}%"
+            )
+            st.markdown("---") 
+            st.markdown(f"💰 **{prepare_arabic_text('المبلغ المستثمر:')}** {investment_amount_main:,.2f} {prepare_arabic_text('جنيه')}")
+            st.markdown(f"📈 **{prepare_arabic_text('العائد الإجمالي (قبل الضريبة):')}** {results['gross_return']:,.2f} {prepare_arabic_text('جنيه')}")
+            st.markdown(f"💸 **{prepare_arabic_text(f'ضريبة الأرباح ({tax_rate_main}%):')}** -{results['tax_amount']:,.2f} {prepare_arabic_text('جنيه')}")
+            st.markdown("---")
+            st.markdown(f'<div style="background-color: #495057; padding: 10px; border-radius: 8px; text-align: center;">'
+                        f'<span style="font-size: 1.1rem; color: #adb5bd;">{prepare_arabic_text("🏦 إجمالي المبلغ المستلم في نهاية المدة")}</span><br>'
+                        f'<span style="font-size: 1.5rem; color: #FFFFFF; font-weight: 700;">{results["total_payout"]:,.2f} {prepare_arabic_text("جنيه")}</span>'
+                        f'</div>', unsafe_allow_html=True)
     else:
          with results_placeholder_main.container(border=True):
             st.error(prepare_arabic_text("لم يتم العثور على عائد للأجل المحدد."))
 else:
     with results_placeholder_main.container(border=True):
-        st.info(prepare_arabic_text("✨ نتائج العائد الأساسي ستظهر هنا بعد ملء النموذج والضغط على زر الحساب."))
+        st.info(prepare_arabic_text("✨ نتائج العائد الأساسي والنسبة الفعلية للربح ستظهر هنا بعد ملء النموذج والضغط على زر الحساب."))
 
 st.divider()
 st.header(prepare_arabic_text("⚖️ حاسبة البيع في السوق الثانوي"))
@@ -142,44 +157,14 @@ if calc_secondary_sale_button:
             st.markdown('<hr style="border-color: #495057;">', unsafe_allow_html=True)
             net_profit = results['net_profit']
             if net_profit > 0:
-                decision_html = f"""
-                <div style="background-color: #1e4620; padding: 15px; border-radius: 8px; border: 1px solid #49c57a; text-align: right;">
-                    <h5 style="color: #ffffff; margin-bottom: 10px;">{prepare_arabic_text("✅ قرار البيع: مربح")}</h5>
-                    <p style="color: #e0e0e0; font-size: 0.95rem; margin-bottom: 10px;">
-                        {prepare_arabic_text(f"البيع الآن سيحقق لك <b>ربحاً صافياً</b> قدره <b>{net_profit:,.2f} جنيه</b>.")}
-                    </p>
-                    <p style="color: #ffffff; font-size: 1rem; margin-bottom: 0;">
-                        <b>{prepare_arabic_text("النصيحة:")}</b> {prepare_arabic_text("قد يكون البيع خياراً جيداً إذا كنت بحاجة للسيولة، أو وجدت فرصة استثمارية أخرى بعائد أعلى.")}
-                    </p>
-                </div>
-                """
+                decision_html = f"""<div style="background-color: #1e4620; padding: 15px; border-radius: 8px; border: 1px solid #49c57a; text-align: right;"><h5 style="color: #ffffff; margin-bottom: 10px;">{prepare_arabic_text("✅ قرار البيع: مربح")}</h5><p style="color: #e0e0e0; font-size: 0.95rem; margin-bottom: 10px;">{prepare_arabic_text(f"البيع الآن سيحقق لك <b>ربحاً صافياً</b> قدره <b>{net_profit:,.2f} جنيه</b>.")}</p><p style="color: #ffffff; font-size: 1rem; margin-bottom: 0;"><b>{prepare_arabic_text("النصيحة:")}</b> {prepare_arabic_text("قد يكون البيع خياراً جيداً إذا كنت بحاجة للسيولة، أو وجدت فرصة استثمارية أخرى بعائد أعلى.")}</p></div>"""
                 st.markdown(decision_html, unsafe_allow_html=True)
             elif net_profit < 0:
                 loss_value = abs(net_profit)
-                decision_html = f"""
-                <div style="background-color: #4a2a2a; padding: 15px; border-radius: 8px; border: 1px solid #f28b82; text-align: right;">
-                    <h5 style="color: #ffffff; margin-bottom: 10px;">{prepare_arabic_text("⚠️ قرار البيع: غير مربح")}</h5>
-                    <p style="color: #e0e0e0; font-size: 0.95rem; margin-bottom: 10px;">
-                        {prepare_arabic_text(f"البيع الآن سيتسبب في <b>خسارة صافية</b> قدرها <b>{loss_value:,.2f} جنيه</b>.")}
-                    </p>
-                    <p style="color: #ffffff; font-size: 1rem; margin-bottom: 0;">
-                        <b>{prepare_arabic_text("النصيحة:")}</b> {prepare_arabic_text("يُنصح بالانتظار حتى تاريخ الاستحقاق لتجنب هذه الخسارة وتحقيق عائدك الأصلي.")}
-                    </p>
-                </div>
-                """
+                decision_html = f"""<div style="background-color: #4a2a2a; padding: 15px; border-radius: 8px; border: 1px solid #f28b82; text-align: right;"><h5 style="color: #ffffff; margin-bottom: 10px;">{prepare_arabic_text("⚠️ قرار البيع: غير مربح")}</h5><p style="color: #e0e0e0; font-size: 0.95rem; margin-bottom: 10px;">{prepare_arabic_text(f"البيع الآن سيتسبب في <b>خسارة صافية</b> قدرها <b>{loss_value:,.2f} جنيه</b>.")}</p><p style="color: #ffffff; font-size: 1rem; margin-bottom: 0;"><b>{prepare_arabic_text("النصيحة:")}</b> {prepare_arabic_text("يُنصح بالانتظار حتى تاريخ الاستحقاق لتجنب هذه الخسارة وتحقيق عائدك الأصلي.")}</p></div>"""
                 st.markdown(decision_html, unsafe_allow_html=True)
             else:
-                decision_html = f"""
-                <div style="background-color: #2a394a; padding: 15px; border-radius: 8px; border: 1px solid #8ab4f8; text-align: right;">
-                    <h5 style="color: #ffffff; margin-bottom: 10px;">{prepare_arabic_text("⚖️ قرار البيع: متعادل")}</h5>
-                    <p style="color: #e0e0e0; font-size: 0.95rem; margin-bottom: 10px;">
-                        {prepare_arabic_text("البيع الآن لن ينتج عنه أي ربح أو خسارة.")}
-                    </p>
-                    <p style="color: #ffffff; font-size: 1rem; margin-bottom: 0;">
-                        <b>{prepare_arabic_text("النصيحة:")}</b> {prepare_arabic_text("يمكنك البيع إذا كنت بحاجة لاسترداد قيمة الشراء مبكراً دون أي تغيير في قيمتها.")}
-                    </p>
-                </div>
-                """
+                decision_html = f"""<div style="background-color: #2a394a; padding: 15px; border-radius: 8px; border: 1px solid #8ab4f8; text-align: right;"><h5 style="color: #ffffff; margin-bottom: 10px;">{prepare_arabic_text("⚖️ قرار البيع: متعادل")}</h5><p style="color: #e0e0e0; font-size: 0.95rem; margin-bottom: 10px;">{prepare_arabic_text("البيع الآن لن ينتج عنه أي ربح أو خسارة.")}</p><p style="color: #ffffff; font-size: 1rem; margin-bottom: 0;"><b>{prepare_arabic_text("النصيحة:")}</b> {prepare_arabic_text("يمكنك البيع إذا كنت بحاجة لاسترداد قيمة الشراء مبكراً دون أي تغيير في قيمتها.")}</p></div>"""
                 st.markdown(decision_html, unsafe_allow_html=True)
 else:
     with secondary_results_placeholder.container(border=True):
