@@ -10,6 +10,10 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+    # هذا القسم الجديد يمنح الروبوت صلاحية رفع التغييرات إلى مشروعك
+    permissions:
+      contents: write
+
     steps:
       # 1. تحميل نسخة من الكود الخاص بك
       - name: Check out repository code
@@ -28,7 +32,7 @@ jobs:
           pip install -r requirements.txt
           pip install ruff black pytest
 
-      # 4. فحص جودة الكود باستخدام ruff
+      # 4. فحص جودة الكود باستخدام ruff وإصلاحها
       - name: Lint with ruff
         run: ruff check . --fix
 
