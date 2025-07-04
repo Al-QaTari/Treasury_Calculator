@@ -1,10 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
 
+/* القاعدة العامة بعد إزالة المحاذاة لليمين الإجبارية */
 html, body, [class*="st-"], button, input, textarea, select {
     direction: rtl !important;
-    text-align: right !important;
     font-family: 'Cairo', sans-serif !important;
     box-sizing: border-box;
+}
+
+/* قاعدة جديدة لتوسيط الهيدر */
+.centered-header {
+    text-align: center !important;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -32,33 +37,16 @@ div[data-testid="stMetric"] {
 
 div[data-testid="stMetricValue"] {
     color: #f8f9fa !important;
-    font-size: 1.15rem !important;
+    font-size: 1.5rem !important;
     padding: 0 !important;
     margin: 0 !important;
 }
 
 div[data-testid="stMetricLabel"] {
     color: #adb5bd !important;
-    font-size: 0.75rem !important;
+    font-size: 0.9rem !important;
     white-space: normal;
     word-wrap: break-word;
     padding: 0 !important;
     margin-top: 5px !important;
-}
-
-.app-title {
-    text-align: center !important;
-    padding: 1.5rem 1rem;
-    background-color: #343a40;
-    border-radius: 15px;
-    margin-bottom: 1rem;
-    box-shadow: 0 4px 12px 0 rgba(0,0,0,0.1) !important;
-}
-
-.app-title h1 {
-    color: #ffffff !important;
-}
-
-.app-title p {
-    color: #dee2e6 !important;
 }
