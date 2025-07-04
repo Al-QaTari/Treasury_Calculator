@@ -4,13 +4,11 @@ from datetime import datetime
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.options import Options as ChromeOptions
-from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import logging
-import re
 import os
 import constants as C
 from db_manager import DatabaseManager
@@ -74,9 +72,11 @@ def fetch_data_from_cbe(_db_manager: DatabaseManager):
         soup = BeautifulSoup(page_source, 'lxml')
 
         results_header = soup.find(lambda tag: tag.name == 'h2' and 'النتائج' in tag.get_text())
-        if not results_header: raise ValueError("Could not find the 'النتائج' (Results) header.")
+        if not results_header:
+            raise ValueError("Could not find the 'النتائج' (Results) header.")
         results_table = results_header.find_next('table')
-        if not results_table: raise ValueError("Could not find the table following the 'Results' header.")
+        if not results_table:
+            raise ValueError("Could not find the table following the 'Results' header.")
             
         results_df = pd.read_html(StringIO(str(results_table)))[0]
         tenors_list = pd.to_numeric(results_df.columns[1:], errors='coerce').dropna().astype(int).tolist()
@@ -85,14 +85,17 @@ def fetch_data_from_cbe(_db_manager: DatabaseManager):
         logging.info(f"Extracted tenors: {tenors_list} and session dates: {session_dates}")
 
         accepted_bids_header = soup.find(lambda tag: tag.name in ['p', 'strong'] and C.ACCEPTED_BIDS_KEYWORD in tag.get_text())
-        if not accepted_bids_header: raise ValueError("Could not find the 'العروض المقبولة' header.")
+        if not accepted_bids_header:
+            raise ValueError("Could not find the 'العروض المقبولة' header.")
         accepted_bids_table = accepted_bids_header.find_next('table')
-        if not accepted_bids_table: raise ValueError("Could not find the table following 'Accepted Bids' header.")
+        if not accepted_bids_table:
+            raise ValueError("Could not find the table following 'Accepted Bids' header.")
 
         accepted_df = pd.read_html(StringIO(str(accepted_bids_table)))[0]
         
         yield_row_series = next((row for _, row in accepted_df.iterrows() if isinstance(row.iloc[0], str) and C.YIELD_ANCHOR_TEXT in row.iloc[0]), None)
-        if yield_row_series is None: raise ValueError("Could not find the yield data row.")
+        if yield_row_series is None:
+            raise ValueError("Could not find the yield data row.")
             
         yields_list = pd.to_numeric(yield_row_series.iloc[1:len(tenors_list)+1], errors='coerce').dropna().astype(float).tolist()
         logging.info(f"Extracted yields: {yields_list}")
