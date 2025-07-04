@@ -1,26 +1,37 @@
-import constants as C # تم التعديل هنا: إزالة النقطة
+import constants as C
 
 def calculate_primary_yield(investment_amount, tenor, yield_rate, tax_rate):
     """
-    Calculates the net return for a primary T-bill investment.
+    Calculates the net return for a primary T-bill investment and the real profit percentage.
     """
+    if investment_amount <= 0:
+        # Return zeroed-out dictionary if investment is zero to avoid division errors
+        return {
+            "gross_return": 0, "tax_amount": 0, "net_return": 0,
+            "total_payout": 0, "real_profit_percentage": 0
+        }
+        
     annual_yield_decimal = yield_rate / 100.0
     gross_return = investment_amount * (annual_yield_decimal / C.DAYS_IN_YEAR) * tenor
     tax_amount = gross_return * (tax_rate / 100.0)
     net_return = gross_return - tax_amount
     total_payout = investment_amount + net_return
+    
+    # Calculate the real profit percentage for the period
+    real_profit_percentage = (net_return / investment_amount) * 100
+    
     return {
         "gross_return": gross_return,
         "tax_amount": tax_amount,
         "net_return": net_return,
-        "total_payout": total_payout
+        "total_payout": total_payout,
+        "real_profit_percentage": real_profit_percentage
     }
 
 def analyze_secondary_sale(face_value, original_yield, original_tenor, holding_days, secondary_yield, tax_rate):
     """
     Analyzes the outcome of selling a T-bill on the secondary market.
     """
-    # Business logic validation
     if not 1 <= holding_days < original_tenor:
         return {"error": "أيام الاحتفاظ يجب أن تكون أكبر من صفر وأقل من أجل الإذن الأصلي."}
 
