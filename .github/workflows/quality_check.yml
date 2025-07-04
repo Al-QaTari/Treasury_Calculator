@@ -10,43 +10,39 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    # هذا القسم الجديد يمنح الروبوت صلاحية رفع التغييرات إلى مشروعك
     permissions:
       contents: write
 
     steps:
-      # 1. تحميل نسخة من الكود الخاص بك
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      # 2. إعداد بيئة عمل بايثون
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # 3. تثبيت المكتبات اللازمة
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install ruff black pytest
 
-      # 4. فحص جودة الكود باستخدام ruff وإصلاحها
       - name: Lint with ruff
         run: ruff check . --fix
 
-      # 5. تنسيق الكود تلقائيًا باستخدام black
       - name: Format code with black
         run: black .
+      
+      # ⬇️⬇️ هذه هي الخطوة الجديدة والمهمة لحل مشكلة المزامنة ⬇️⬇️
+      - name: Pull changes to avoid conflicts
+        run: git pull
 
-      # 6. حفظ التغييرات التي تمت تلقائيًا (إن وجدت)
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "style: Auto-format code with black and ruff"
           branch: ${{ github.head_ref || github.ref_name }}
 
-      # 7. تشغيل الاختبارات للتأكد من أن كل شيء يعمل بعد التنسيق
       - name: Run tests with pytest
         run: pytest
