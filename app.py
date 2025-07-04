@@ -1,7 +1,6 @@
 import streamlit as st
 import pytz
 from datetime import datetime
-import pandas as pd
 from utils import prepare_arabic_text, load_css
 from db_manager import DatabaseManager
 from calculations import calculate_primary_yield, analyze_secondary_sale
@@ -162,7 +161,7 @@ def main():
         yield_rate_row = data_df[data_df[C.TENOR_COLUMN_NAME] == selected_tenor_main]
         if not yield_rate_row.empty:
             yield_rate = yield_rate_row[C.YIELD_COLUMN_NAME].iloc[0]
-            results = calculate_primary_yield(investment_amount_main, yield_rate, selected_tenor_main)
+            results = calculate_primary_yield(investment_amount_main, yield_rate, selected_tenor_main, tax_rate_main)
             
             with results_placeholder_main.container(border=True):
                 st.subheader(prepare_arabic_text(f"✨ ملخص استثمارك لأجل {selected_tenor_main} يوم"), anchor=False)
