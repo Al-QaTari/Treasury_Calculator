@@ -8,6 +8,9 @@ on:
     
     # Rule 2: Run once at 5:00 AM UTC (8 AM Egypt Time) on all other days (Tue-Sat).
     - cron: '0 5 * * 2-6'
+    
+    # Rule 3 (New): Run at the beginning of every day, 12:00 AM Egypt Time (21:00 UTC).
+    - cron: '0 21 * * *'
 
 jobs:
   scrape:
