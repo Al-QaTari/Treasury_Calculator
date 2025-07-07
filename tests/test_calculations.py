@@ -10,6 +10,7 @@ from calculations import calculate_primary_yield, analyze_secondary_sale
 
 # --- اختبارات حاسبة العائد الأساسية ---
 
+
 def test_calculate_primary_yield_standard_case():
     """
     🧪 يختبر حساب العائد الأساسي لأذون الخزانة في حالة قياسية.
@@ -29,11 +30,18 @@ def test_calculate_primary_yield_standard_case():
     expected_net_return = 15964.91
     expected_real_profit_percentage = 19.945
 
-    assert actual_results["purchase_price"] == pytest.approx(expected_purchase_price, abs=0.01)
-    assert actual_results["gross_return"] == pytest.approx(expected_gross_return, abs=0.01)
+    assert actual_results["purchase_price"] == pytest.approx(
+        expected_purchase_price, abs=0.01
+    )
+    assert actual_results["gross_return"] == pytest.approx(
+        expected_gross_return, abs=0.01
+    )
     assert actual_results["tax_amount"] == pytest.approx(expected_tax_amount, abs=0.01)
     assert actual_results["net_return"] == pytest.approx(expected_net_return, abs=0.01)
-    assert actual_results["real_profit_percentage"] == pytest.approx(expected_real_profit_percentage, abs=0.01)
+    assert actual_results["real_profit_percentage"] == pytest.approx(
+        expected_real_profit_percentage, abs=0.01
+    )
+
 
 def test_calculate_primary_yield_zero_amount():
     """
@@ -44,7 +52,9 @@ def test_calculate_primary_yield_zero_amount():
     assert results["gross_return"] == 0
     assert results["purchase_price"] == 0
 
+
 # --- اختبارات جديدة لحاسبة البيع في السوق الثانوي ---
+
 
 def test_analyze_secondary_sale_with_profit():
     """
@@ -64,6 +74,7 @@ def test_analyze_secondary_sale_with_profit():
     assert results["net_profit"] == pytest.approx(4186.02, abs=0.01)
     assert results["tax_amount"] == pytest.approx(1046.51, abs=0.01)
 
+
 def test_analyze_secondary_sale_with_loss():
     """
     🧪 يختبر حاسبة البيع الثانوي في حالة تحقيق خسارة.
@@ -76,11 +87,12 @@ def test_analyze_secondary_sale_with_loss():
         secondary_yield=35.0,  # العائد في السوق زاد بشكل كبير، لذا من المتوقع تحقيق خسارة
         tax_rate=20.0,
     )
-    
+
     assert results["error"] is None
     assert results["sale_price"] == pytest.approx(79219.80, abs=0.01)
-    assert results["net_profit"] < 0 # التأكد من أن صافي الربح سالب
-    assert results["tax_amount"] == 0 # يجب أن تكون الضريبة صفراً في حالة الخسارة
+    assert results["net_profit"] < 0  # التأكد من أن صافي الربح سالب
+    assert results["tax_amount"] == 0  # يجب أن تكون الضريبة صفراً في حالة الخسارة
+
 
 def test_analyze_secondary_sale_invalid_days():
     """
