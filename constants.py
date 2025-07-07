@@ -30,7 +30,7 @@ DEFAULT_TAX_RATE_PERCENT = 20.0
 # Used only if the database is empty or inaccessible
 INITIAL_DATA = {
     TENOR_COLUMN_NAME: [91, 182, 273, 364],
-    YIELD_COLUMN_NAME: [26.0, 26.5, 27.0, 27.5], # Example yields
+    YIELD_COLUMN_NAME: [26.0, 26.5, 27.0, 27.5],  # Example yields
     SESSION_DATE_COLUMN_NAME: ["N/A", "N/A", "N/A", "N/A"],
 }
 

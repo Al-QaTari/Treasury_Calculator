@@ -18,6 +18,7 @@ from db_manager import DatabaseManager
 # Configure logging for this module
 logger = logging.getLogger(__name__)
 
+
 def setup_driver() -> Optional[webdriver.Chrome]:
     """
     Sets up a Selenium Chrome driver.
@@ -44,6 +45,7 @@ def setup_driver() -> Optional[webdriver.Chrome]:
         logger.error(f"Failed to initialize Selenium driver: {e}", exc_info=True)
         return None
 
+
 def parse_cbe_html(page_source: str) -> Optional[pd.DataFrame]:
     """
     Parses the HTML source of the CBE page to extract T-bill data.
@@ -55,9 +57,11 @@ def parse_cbe_html(page_source: str) -> Optional[pd.DataFrame]:
         A DataFrame with tenor, yield, and session date, or None on failure.
     """
     soup = BeautifulSoup(page_source, "lxml")
-    
+
     # Find the main results table to get tenors and session dates
-    results_header = soup.find(lambda tag: tag.name == "h2" and "النتائج" in tag.get_text())
+    results_header = soup.find(
+        lambda tag: tag.name == "h2" and "النتائج" in tag.get_text()
+    )
     if not results_header:
         logger.error("Could not find the 'النتائج' (Results) header.")
         return None
@@ -65,17 +69,25 @@ def parse_cbe_html(page_source: str) -> Optional[pd.DataFrame]:
     if not results_table:
         logger.error("Could not find the table following the 'Results' header.")
         return None
-        
+
     results_df = pd.read_html(StringIO(str(results_table)))[0]
-    tenors = pd.to_numeric(results_df.columns[1:], errors='coerce').dropna().astype(int).tolist()
+    tenors = (
+        pd.to_numeric(results_df.columns[1:], errors="coerce")
+        .dropna()
+        .astype(int)
+        .tolist()
+    )
     session_date_row = results_df[results_df.iloc[:, 0] == "تاريخ الجلسة"]
     if session_date_row.empty:
         logger.error("Could not find 'تاريخ الجلسة' row.")
         return None
-    session_dates = session_date_row.iloc[0, 1:len(tenors) + 1].tolist()
+    session_dates = session_date_row.iloc[0, 1 : len(tenors) + 1].tolist()
 
     # Find the accepted bids table to get yields
-    accepted_bids_header = soup.find(lambda tag: tag.name in ["p", "strong"] and C.ACCEPTED_BIDS_KEYWORD in tag.get_text())
+    accepted_bids_header = soup.find(
+        lambda tag: tag.name in ["p", "strong"]
+        and C.ACCEPTED_BIDS_KEYWORD in tag.get_text()
+    )
     if not accepted_bids_header:
         logger.error("Could not find the 'العروض المقبولة' header.")
         return None
@@ -85,28 +97,42 @@ def parse_cbe_html(page_source: str) -> Optional[pd.DataFrame]:
         return None
 
     accepted_df = pd.read_html(StringIO(str(accepted_bids_table)))[0]
-    
+
     # -- CORRECTED LINE: Added regex=False to perform a literal search and fix the warning/error --
-    yield_row = accepted_df[accepted_df.iloc[:, 0].str.contains(C.YIELD_ANCHOR_TEXT, na=False, regex=False)]
-    
+    yield_row = accepted_df[
+        accepted_df.iloc[:, 0].str.contains(C.YIELD_ANCHOR_TEXT, na=False, regex=False)
+    ]
+
     if yield_row.empty:
         logger.error(f"Could not find row containing '{C.YIELD_ANCHOR_TEXT}'.")
         return None
-    yields = pd.to_numeric(yield_row.iloc[0, 1:len(tenors) + 1], errors='coerce').dropna().astype(float).tolist()
+    yields = (
+        pd.to_numeric(yield_row.iloc[0, 1 : len(tenors) + 1], errors="coerce")
+        .dropna()
+        .astype(float)
+        .tolist()
+    )
 
     if not (len(tenors) == len(yields) == len(session_dates)):
         logger.error("Data mismatch between tenors, yields, and session dates.")
         return None
 
     # Create and return the final DataFrame
-    final_df = pd.DataFrame({
-        C.TENOR_COLUMN_NAME: tenors,
-        C.YIELD_COLUMN_NAME: yields,
-        C.SESSION_DATE_COLUMN_NAME: session_dates
-    }).sort_values(by=C.TENOR_COLUMN_NAME).reset_index(drop=True)
-    
+    final_df = (
+        pd.DataFrame(
+            {
+                C.TENOR_COLUMN_NAME: tenors,
+                C.YIELD_COLUMN_NAME: yields,
+                C.SESSION_DATE_COLUMN_NAME: session_dates,
+            }
+        )
+        .sort_values(by=C.TENOR_COLUMN_NAME)
+        .reset_index(drop=True)
+    )
+
     final_df[C.DATE_COLUMN_NAME] = datetime.now().strftime("%Y-%m-%d")
     return final_df
+
 
 def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
     """
@@ -123,8 +149,10 @@ def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
 
         logger.info(f"Navigating to {C.CBE_DATA_URL}")
         driver.get(C.CBE_DATA_URL)
-        WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        
+        WebDriverWait(driver, 60).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+
         page_source = driver.page_source
         final_df = parse_cbe_html(page_source)
 
@@ -135,9 +163,13 @@ def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
             logger.error("Parsing failed. No data was saved.")
 
     except TimeoutException:
-        logger.error("Page load timed out. The website might be down or slow.", exc_info=True)
+        logger.error(
+            "Page load timed out. The website might be down or slow.", exc_info=True
+        )
     except Exception as e:
-        logger.error(f"An unexpected error occurred during scraping: {e}", exc_info=True)
+        logger.error(
+            f"An unexpected error occurred during scraping: {e}", exc_info=True
+        )
     finally:
         if driver:
             logger.info("Closing Selenium driver.")

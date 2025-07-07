@@ -5,6 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def prepare_arabic_text(text: str) -> str:
     """
     This function now does nothing because the system handles Arabic correctly.
@@ -13,6 +14,7 @@ def prepare_arabic_text(text: str) -> str:
     # The modern environment handles reshaping and bidi display automatically.
     # Therefore, no processing is needed.
     return str(text)
+
 
 def load_css(file_path: str) -> None:
     """
