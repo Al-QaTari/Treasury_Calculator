@@ -3,14 +3,14 @@ name: Scrape Latest CBE Data
 on:
   workflow_dispatch:
   schedule:
-    # Rule 1: Run every hour from 14:00 to 20:00 UTC (5 PM to 11 PM Egypt Time) on Sunday and Monday.
+    # القاعدة 1: التشغيل كل ساعة من 5 مساءً إلى 11 مساءً بتوقيت مصر يومي الأحد والإثنين
     - cron: '0 14-20 * * 0,1'
     
-    # Rule 2: Run once at 5:00 AM UTC (8 AM Egypt Time) on all other days (Tue-Sat).
+    # القاعدة 2: التشغيل مرة واحدة الساعة 8 صباحًا بتوقيت مصر في باقي الأيام
     - cron: '0 5 * * 2-6'
     
-    # Rule 3 (New): Run at the beginning of every day, 12:00 AM Egypt Time (21:00 UTC).
-    - cron: '0 21 * * *'
+    # القاعدة 3 (المعدلة): التشغيل مرة واحدة الساعة 12:10 صباحًا بتوقيت مصر
+    - cron: '10 21 * * *'
 
 jobs:
   scrape:
