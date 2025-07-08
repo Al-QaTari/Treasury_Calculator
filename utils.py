@@ -22,7 +22,7 @@ def load_css(file_path: str) -> None:
     Loads an external CSS file into the Streamlit app for custom styling.
     """
     if os.path.exists(file_path):
-        with open(file_path, encoding='utf-8') as f:
+        with open(file_path, encoding="utf-8") as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
     else:
         logger.warning(f"CSS file not found at path: {file_path}")
@@ -40,7 +40,7 @@ def setup_logging(level: int = logging.INFO) -> None:
             level=level,
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
-            handlers=[logging.StreamHandler()]
+            handlers=[logging.StreamHandler()],
         )
         logger.info("Logging configured successfully.")
 
@@ -66,7 +66,13 @@ def format_currency(value: Optional[float], currency_symbol: str = "جنيه") -
 
 
 # --- IMPROVEMENT 3: Reusable UI Component Builder ---
-def create_metric_box(title: str, value: Any, unit: str = "", color: str = "#8ab4f8", value_font_size: str = "1.9rem") -> str:
+def create_metric_box(
+    title: str,
+    value: Any,
+    unit: str = "",
+    color: str = "#8ab4f8",
+    value_font_size: str = "1.9rem",
+) -> str:
     """
     Generates the HTML for a styled metric box.
 
@@ -82,7 +88,7 @@ def create_metric_box(title: str, value: Any, unit: str = "", color: str = "#8ab
     """
     prepared_title = prepare_arabic_text(title)
     prepared_unit = prepare_arabic_text(unit)
-    
+
     return f"""
     <div style="text-align: center; background-color: #495057; padding: 10px; border-radius: 10px; height: 100%;">
         <p style="font-size: 1rem; color: #adb5bd; margin-bottom: 0px;">{prepared_title}</p>
