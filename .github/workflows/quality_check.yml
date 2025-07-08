@@ -16,8 +16,8 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-        # نسحب كامل تاريخ الفرع لضمان عمل أوامر git بشكل سليم
         with:
+          # نسحب كامل تاريخ الفرع لضمان عمل أوامر git بشكل سليم
           fetch-depth: 0
 
       - name: Set up Python
@@ -31,24 +31,24 @@ jobs:
           pip install -r requirements.txt
           pip install ruff black pytest
 
-      # ✏️ الخطوة 1: المزامنة أولاً (مهم جدًا)
-      # نقوم بمزامنة أي تغييرات حدثت على GitHub قبل أن نبدأ
+      # --- الترتيب الصحيح والنهائي يبدأ هنا ---
+
+      # الخطوة 1: المزامنة مع GitHub أولاً (قبل أي تعديل محلي)
       - name: Synchronize with remote branch
         run: git pull --rebase
 
-      # ✏️ الخطوة 2: الاختبار المبدئي (اختياري ولكنه جيد)
-      # نتأكد أن الكود سليم قبل أن نقوم بتنسيقه
+      # الخطوة 2: اختبار الكود للتأكد من أنه سليم
       - name: Run tests on original code
         run: pytest
 
-      # ✏️ الخطوة 3: الآن نقوم بالتنسيق والتعديل
+      # الخطوة 3: الآن فقط نبدأ بتنسيق الكود وتعديله
       - name: Lint and fix with ruff
         run: ruff check . --fix
 
       - name: Format code with black
         run: black .
 
-      # ✏️ الخطوة 4: نحفظ التغييرات الناتجة عن التنسيق فقط
+      # الخطوة 4: نحفظ التغييرات الناتجة عن التنسيق فقط
       - name: Commit formatting changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
