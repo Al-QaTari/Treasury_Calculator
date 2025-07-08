@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-        # ✅ تعديل: إضافة إعدادات لسحب كامل تاريخ الفرع وهو أفضل لعمليات git
+        # نسحب كامل تاريخ الفرع لضمان عمل أوامر git بشكل سليم
         with:
           fetch-depth: 0
 
@@ -31,22 +31,27 @@ jobs:
           pip install -r requirements.txt
           pip install ruff black pytest
 
-      # ✅ تعديل: سحب التغييرات أصبح الخطوة الأولى بعد الإعداد
+      # ✏️ الخطوة 1: المزامنة أولاً (مهم جدًا)
+      # نقوم بمزامنة أي تغييرات حدثت على GitHub قبل أن نبدأ
       - name: Synchronize with remote branch
         run: git pull --rebase
-        # استخدام --rebase أفضل من merge commit في الـ workflows
 
-      - name: Run tests before formatting
+      # ✏️ الخطوة 2: الاختبار المبدئي (اختياري ولكنه جيد)
+      # نتأكد أن الكود سليم قبل أن نقوم بتنسيقه
+      - name: Run tests on original code
         run: pytest
 
-      - name: Lint with ruff
+      # ✏️ الخطوة 3: الآن نقوم بالتنسيق والتعديل
+      - name: Lint and fix with ruff
         run: ruff check . --fix
 
       - name: Format code with black
         run: black .
 
+      # ✏️ الخطوة 4: نحفظ التغييرات الناتجة عن التنسيق فقط
       - name: Commit formatting changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "style: Auto-format code with black and ruff"
+          # هذا الإعداد يضمن أن الـ commit سيتم على الفرع الصحيح دائمًا
           branch: ${{ github.head_ref || github.ref_name }}
