@@ -2,7 +2,7 @@
 [![Scheduled Scrape](https://github.com/Al-QaTari/Treasury_Calculator/actions/workflows/scheduled_scrape.yml/badge.svg)](https://github.com/Al-QaTari/Treasury_Calculator/actions/workflows/scheduled_scrape.yml)
 [![Made with Streamlit](https://img.shields.io/badge/Made_with-Streamlit-FF4B4B?logo=streamlit)](https://streamlit.io)
 [![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/Al-QaTari/Treasury_Calculator/blob/main/LICENSE) 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/Al-QaTari/Treasury_Calculator/blob/main/LICENSE.txt) 
 # 🏦 حاسبة أذون الخزانة المصرية
 
 
