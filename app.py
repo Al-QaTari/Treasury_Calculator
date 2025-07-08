@@ -168,7 +168,9 @@ def main():
                         datetime.now(pytz.timezone("Africa/Cairo")).date()
                         - last_update_dt.date()
                     ).days > 0:
-                        st.info("ℹ️ الأسعار المعروضة هي لآخر عطاء منشور رسميًا، وتُستخدم كمرجع استرشادي.")
+                        st.info(
+                            "ℹ️ الأسعار المعروضة هي لآخر عطاء منشور رسميًا، وتُستخدم كمرجع استرشادي."
+                        )
                     else:
                         st.success(
                             prepare_arabic_text("البيانات المعروضة محدثة لليوم."),
