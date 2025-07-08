@@ -22,6 +22,9 @@ def test_primary_yield_logic_is_self_consistent():
     tax_rate = 20.0
 
     results = calculate_primary_yield(face_value, yield_rate, tenor, tax_rate)
+    
+    # نتأكد من عدم وجود خطأ في الحالة الصالحة
+    assert results.get("error") is None
 
     # 1. هل سعر الشراء + الربح الإجمالي = القيمة الإسمية؟
     assert results["purchase_price"] + results["gross_return"] == pytest.approx(
@@ -42,14 +45,25 @@ def test_primary_yield_logic_is_self_consistent():
     assert results["total_payout"] == pytest.approx(face_value)
 
 
-def test_primary_yield_zero_amount():
+# --- ✅ تم تعديل هذا الاختبار ليتوافق مع التحسينات الأخيرة ---
+def test_primary_yield_invalid_input():
     """
-    🧪 يختبر سلوك حاسبة العائد الأساسية عند إدخال مبلغ صفر.
+    🧪 يختبر أن الحاسبة تُرجع خطأ عند إدخال قيم غير صالحة (مثل الصفر).
     """
-    results = calculate_primary_yield(0, 25.0, 364, 20.0)
-    assert results["net_return"] == 0
-    assert results["gross_return"] == 0
-    assert results["purchase_price"] == 0
+    # الحالة 1: قيمة إسمية صفرية
+    results_zero_face_value = calculate_primary_yield(0, 25.0, 364, 20.0)
+    assert "error" in results_zero_face_value
+    assert results_zero_face_value["error"] is not None
+
+    # الحالة 2: نسبة عائد صفرية
+    results_zero_yield = calculate_primary_yield(100000, 0, 364, 20.0)
+    assert "error" in results_zero_yield
+    assert results_zero_yield["error"] is not None
+
+    # الحالة 3: نسبة ضريبة غير صالحة
+    results_invalid_tax = calculate_primary_yield(100000, 25.0, 364, 101)
+    assert "error" in results_invalid_tax
+    assert results_invalid_tax["error"] is not None
 
 
 # --- اختبارات حاسبة البيع الثانوي (بطريقة أكثر دقة) ---
