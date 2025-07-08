@@ -37,7 +37,7 @@ jobs:
       - name: Synchronize with remote branch
         run: git pull --rebase
 
-      # الخطوة 2: اختبار الكود للتأكد من أنه سليم
+      # الخطوة 2: اختبار الكود الأصلي للتأكد من أنه سليم
       - name: Run tests on original code
         run: pytest
 
