@@ -1,0 +1,14 @@
+# Database file
+cbe_historical_data.db
+
+# Log files
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+env/
+.env
