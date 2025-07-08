@@ -9,7 +9,7 @@ on:
     # القاعدة 2: التشغيل مرة واحدة الساعة 8 صباحًا بتوقيت مصر في باقي الأيام
     - cron: '0 5 * * 2-6'
     
-    # القاعدة 3 (المعدلة): التشغيل مرة واحدة الساعة 12:10 صباحًا بتوقيت مصر
+    # القاعدة 3: التشغيل مرة واحدة الساعة 12:10 صباحًا بتوقيت مصر
     - cron: '10 21 * * *'
 
 jobs:
@@ -20,20 +20,23 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v3
+        # ✅ التعديل: التحديث إلى أحدث إصدار
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        # ✅ التعديل: التحديث إلى أحدث إصدار
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11' # تم تحديثه ليتوافق مع workflow فحص الجودة
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
-      - name: Run scraper
-        run: python scraper.py
+      - name: Run data update script
+        # ✅ التعديل: تشغيل السكربت الصحيح
+        run: python update_data.py
 
       - name: Commit and push changes
         uses: stefanzweifel/git-auto-commit-action@v5
