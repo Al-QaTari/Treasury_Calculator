@@ -66,20 +66,29 @@ class DatabaseManager:
             return
 
         # Ensure required columns exist
-        required_cols = [C.DATE_COLUMN_NAME, C.TENOR_COLUMN_NAME, C.YIELD_COLUMN_NAME, C.SESSION_DATE_COLUMN_NAME]
+        required_cols = [
+            C.DATE_COLUMN_NAME,
+            C.TENOR_COLUMN_NAME,
+            C.YIELD_COLUMN_NAME,
+            C.SESSION_DATE_COLUMN_NAME,
+        ]
         if not all(col in df.columns for col in required_cols):
-            logger.error(f"DataFrame is missing one of the required columns: {required_cols}")
+            logger.error(
+                f"DataFrame is missing one of the required columns: {required_cols}"
+            )
             return
-            
+
         # Convert DataFrame to a list of tuples for executemany
-        data_to_save: List[Tuple[Any, ...]] = [tuple(x) for x in df[required_cols].to_numpy()]
-        
+        data_to_save: List[Tuple[Any, ...]] = [
+            tuple(x) for x in df[required_cols].to_numpy()
+        ]
+
         logger.info(f"Attempting to upsert {len(data_to_save)} rows.")
 
         try:
             with sqlite3.connect(self.db_filename) as conn:
                 cursor = conn.cursor()
-                
+
                 # --- IMPROVEMENT: Using "INSERT OR REPLACE" is more atomic and efficient ---
                 # This command inserts a row, or if a row with the same PRIMARY KEY
                 # (scrape_date, tenor) already exists, it replaces it.
@@ -88,10 +97,10 @@ class DatabaseManager:
                     ("{C.DATE_COLUMN_NAME}", "{C.TENOR_COLUMN_NAME}", "{C.YIELD_COLUMN_NAME}", "{C.SESSION_DATE_COLUMN_NAME}") 
                     VALUES (?, ?, ?, ?)
                 """
-                
+
                 cursor.executemany(query, data_to_save)
                 conn.commit()
-                
+
                 logger.info(
                     f"Successfully upserted {cursor.rowcount} rows into the database."
                 )
@@ -133,9 +142,13 @@ class DatabaseManager:
 
         except sqlite3.Error as e:
             # This will catch issues like a corrupt database file
-            logger.error(f"A database error occurred while loading data: {e}", exc_info=True)
+            logger.error(
+                f"A database error occurred while loading data: {e}", exc_info=True
+            )
             return fallback_df, f"خطأ في قاعدة البيانات: {e}"
         except Exception as e:
             # Catch any other unexpected errors
-            logger.error(f"An unexpected error occurred while loading data: {e}", exc_info=True)
+            logger.error(
+                f"An unexpected error occurred while loading data: {e}", exc_info=True
+            )
             return fallback_df, f"خطأ غير متوقع: {e}"
