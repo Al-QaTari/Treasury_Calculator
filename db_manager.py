@@ -1,10 +1,10 @@
-# db_manager.py
+# db_manager.py (النسخة المحسنة)
 import sqlite3
 import pandas as pd
 import os
 import logging
 from datetime import datetime
-from typing import Tuple
+from typing import Tuple, List, Any
 
 import constants as C
 
@@ -22,7 +22,8 @@ class DatabaseManager:
         Args:
             db_filename (str): The name of the SQLite database file.
         """
-        self.db_filename = os.path.join(os.getcwd(), db_filename)
+        # Ensure the path is absolute
+        self.db_filename = os.path.abspath(db_filename)
         logger.info(f"Database path set to: {self.db_filename}")
         self._init_db()
 
@@ -31,7 +32,8 @@ class DatabaseManager:
         try:
             with sqlite3.connect(self.db_filename) as conn:
                 cursor = conn.cursor()
-                # Composite PRIMARY KEY on scrape_date and tenor prevents duplicate entries for the same day.
+                # Using a composite PRIMARY KEY on (scrape_date, tenor) allows us
+                # to use "INSERT OR REPLACE" for efficient upserts.
                 cursor.execute(
                     f"""
                 CREATE TABLE IF NOT EXISTS "{C.TABLE_NAME}" (
@@ -53,8 +55,8 @@ class DatabaseManager:
 
     def save_data(self, df: pd.DataFrame) -> None:
         """
-        Saves a DataFrame with T-bill data to the database using an "upsert" logic.
-        This deletes today's data before inserting the new data to prevent duplicates.
+        Saves a DataFrame to the database using an efficient "INSERT OR REPLACE" strategy.
+        This will insert new rows or replace existing rows with the same primary key.
 
         Args:
             df (pd.DataFrame): The DataFrame containing the T-bill data to save.
@@ -63,41 +65,50 @@ class DatabaseManager:
             logger.warning("Received an empty or invalid DataFrame. Nothing to save.")
             return
 
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        logger.info(f"Attempting to save {len(df)} rows for date: {today_str}")
+        # Ensure required columns exist
+        required_cols = [C.DATE_COLUMN_NAME, C.TENOR_COLUMN_NAME, C.YIELD_COLUMN_NAME, C.SESSION_DATE_COLUMN_NAME]
+        if not all(col in df.columns for col in required_cols):
+            logger.error(f"DataFrame is missing one of the required columns: {required_cols}")
+            return
+            
+        # Convert DataFrame to a list of tuples for executemany
+        data_to_save: List[Tuple[Any, ...]] = [tuple(x) for x in df[required_cols].to_numpy()]
+        
+        logger.info(f"Attempting to upsert {len(data_to_save)} rows.")
 
         try:
             with sqlite3.connect(self.db_filename) as conn:
                 cursor = conn.cursor()
-                # Delete any existing records for today to prevent conflicts
-                cursor.execute(
-                    f'DELETE FROM "{C.TABLE_NAME}" WHERE "{C.DATE_COLUMN_NAME}" = ?',
-                    (today_str,),
-                )
-                logger.info(f"Deleted {cursor.rowcount} old records for today.")
-
-                # Append the new data
-                df.to_sql(C.TABLE_NAME, conn, if_exists="append", index=False)
+                
+                # --- IMPROVEMENT: Using "INSERT OR REPLACE" is more atomic and efficient ---
+                # This command inserts a row, or if a row with the same PRIMARY KEY
+                # (scrape_date, tenor) already exists, it replaces it.
+                query = f"""
+                    INSERT OR REPLACE INTO "{C.TABLE_NAME}" 
+                    ("{C.DATE_COLUMN_NAME}", "{C.TENOR_COLUMN_NAME}", "{C.YIELD_COLUMN_NAME}", "{C.SESSION_DATE_COLUMN_NAME}") 
+                    VALUES (?, ?, ?, ?)
+                """
+                
+                cursor.executemany(query, data_to_save)
+                conn.commit()
+                
                 logger.info(
-                    f"Successfully saved {len(df)} new records for {today_str}."
+                    f"Successfully upserted {cursor.rowcount} rows into the database."
                 )
 
-        except sqlite3.Error as e:
+        except sqlite3.DatabaseError as e:
             logger.error(f"Failed to save data to SQLite: {e}", exc_info=True)
             raise
 
     def load_latest_data(self) -> Tuple[pd.DataFrame, str]:
         """
-        Loads the most recent data set from the SQLite database.
+        Loads the most recent complete data set from the SQLite database.
         This is optimized to only query for data matching the latest scrape date.
 
         Returns:
             A tuple containing a DataFrame with the latest data and a status message.
         """
         fallback_df = pd.DataFrame(C.INITIAL_DATA)
-        if not os.path.exists(self.db_filename):
-            logger.warning("Database file not found. Returning initial data.")
-            return fallback_df, "البيانات الأولية (قاعدة بيانات غير موجودة)"
 
         try:
             with sqlite3.connect(self.db_filename) as conn:
@@ -120,6 +131,11 @@ class DatabaseManager:
                 )
                 return latest_df, status_message
 
-        except (sqlite3.Error, pd.errors.DatabaseError) as e:
-            logger.error(f"Error loading data: {e}", exc_info=True)
-            return fallback_df, f"خطأ في تحميل البيانات: {e}"
+        except sqlite3.Error as e:
+            # This will catch issues like a corrupt database file
+            logger.error(f"A database error occurred while loading data: {e}", exc_info=True)
+            return fallback_df, f"خطأ في قاعدة البيانات: {e}"
+        except Exception as e:
+            # Catch any other unexpected errors
+            logger.error(f"An unexpected error occurred while loading data: {e}", exc_info=True)
+            return fallback_df, f"خطأ غير متوقع: {e}"
