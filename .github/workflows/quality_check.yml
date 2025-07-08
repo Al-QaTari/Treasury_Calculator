@@ -16,6 +16,9 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
+        # ✅ تعديل: إضافة إعدادات لسحب كامل تاريخ الفرع وهو أفضل لعمليات git
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -28,21 +31,22 @@ jobs:
           pip install -r requirements.txt
           pip install ruff black pytest
 
+      # ✅ تعديل: سحب التغييرات أصبح الخطوة الأولى بعد الإعداد
+      - name: Synchronize with remote branch
+        run: git pull --rebase
+        # استخدام --rebase أفضل من merge commit في الـ workflows
+
+      - name: Run tests before formatting
+        run: pytest
+
       - name: Lint with ruff
         run: ruff check . --fix
 
       - name: Format code with black
         run: black .
-      
-      # ⬇️⬇️ هذه هي الخطوة الجديدة والمهمة لحل مشكلة المزامنة ⬇️⬇️
-      - name: Pull changes to avoid conflicts
-        run: git pull
 
-      - name: Commit changes
+      - name: Commit formatting changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "style: Auto-format code with black and ruff"
           branch: ${{ github.head_ref || github.ref_name }}
-
-      - name: Run tests with pytest
-        run: pytest
