@@ -1,4 +1,4 @@
-# calculations.py
+# calculations.py (النسخة المحسنة مع validation أفضل)
 from typing import Dict, Any
 
 import constants as C
@@ -6,10 +6,9 @@ import constants as C
 
 def calculate_primary_yield(
     face_value: float, yield_rate: float, tenor: int, tax_rate: float
-) -> Dict[str, float]:
+) -> Dict[str, Any]:
     """
     Calculates returns for a primary T-bill investment based on its discount nature.
-    The 'yield_rate' is the annualized yield, used to find the purchase price.
 
     Args:
         face_value (float): The nominal value of the T-bill at maturity.
@@ -18,20 +17,15 @@ def calculate_primary_yield(
         tax_rate (float): The tax rate on profits (e.g., 20.0).
 
     Returns:
-        A dictionary with detailed calculation results.
+        A dictionary with detailed calculation results or an error message.
     """
+    # --- IMPROVED VALIDATION ---
     if face_value <= 0 or yield_rate <= 0 or tenor <= 0:
         return {
-            key: 0.0
-            for key in [
-                "purchase_price",
-                "gross_return",
-                "tax_amount",
-                "net_return",
-                "total_payout",
-                "real_profit_percentage",
-            ]
+            "error": "القيمة الإسمية، العائد، والمدة يجب أن تكون أرقامًا موجبة."
         }
+    if not 0 <= tax_rate <= 100:
+        return {"error": "نسبة الضريبة يجب أن تكون بين 0 و 100."}
 
     # This calculation reflects the discount instrument nature of T-bills
     purchase_price = face_value / (1 + (yield_rate / 100.0 * tenor / C.DAYS_IN_YEAR))
@@ -46,11 +40,12 @@ def calculate_primary_yield(
     )
 
     return {
+        "error": None, # Add error key for consistency
         "purchase_price": purchase_price,
         "gross_return": gross_return,
         "tax_amount": tax_amount,
         "net_return": net_return,
-        "total_payout": face_value,  # At maturity, you receive the face value
+        "total_payout": face_value,
         "real_profit_percentage": real_profit_percentage,
     }
 
@@ -77,6 +72,18 @@ def analyze_secondary_sale(
     Returns:
         A dictionary with the analysis results or an error message.
     """
+    # --- IMPROVED VALIDATION (arranged from basic to logical) ---
+    if (
+        face_value <= 0
+        or original_yield <= 0
+        or original_tenor <= 0
+        or secondary_yield <= 0
+    ):
+        return {"error": "جميع المدخلات الرقمية يجب أن تكون أرقامًا موجبة."}
+
+    if not 0 <= tax_rate <= 100:
+        return {"error": "نسبة الضريبة يجب أن تكون بين 0 و 100."}
+
     if not 1 <= holding_days < original_tenor:
         return {
             "error": "أيام الاحتفاظ يجب أن تكون أكبر من صفر وأقل من أجل الإذن الأصلي."
