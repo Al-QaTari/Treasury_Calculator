@@ -10,7 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import logging
-import time # **IMPROVEMENT**: Import time module for delays
+import time  # **IMPROVEMENT**: Import time module for delays
 from typing import Optional
 
 import constants as C
@@ -59,17 +59,26 @@ def parse_cbe_html(page_source: str) -> Optional[pd.DataFrame]:
     soup = BeautifulSoup(page_source, "lxml")
 
     # Find the main results table to get tenors and session dates
-    results_header = soup.find(lambda tag: tag.name == "h2" and "النتائج" in tag.get_text())
+    results_header = soup.find(
+        lambda tag: tag.name == "h2" and "النتائج" in tag.get_text()
+    )
     if not results_header:
         logger.error("Parse Error: Could not find the 'النتائج' (Results) header.")
         return None
     results_table = results_header.find_next("table")
     if not results_table:
-        logger.error("Parse Error: Could not find the table following the 'Results' header.")
+        logger.error(
+            "Parse Error: Could not find the table following the 'Results' header."
+        )
         return None
 
     results_df = pd.read_html(StringIO(str(results_table)))[0]
-    tenors = pd.to_numeric(results_df.columns[1:], errors="coerce").dropna().astype(int).tolist()
+    tenors = (
+        pd.to_numeric(results_df.columns[1:], errors="coerce")
+        .dropna()
+        .astype(int)
+        .tolist()
+    )
     session_date_row = results_df[results_df.iloc[:, 0] == "تاريخ الجلسة"]
     if session_date_row.empty:
         logger.error("Parse Error: Could not find 'تاريخ الجلسة' row.")
@@ -77,34 +86,56 @@ def parse_cbe_html(page_source: str) -> Optional[pd.DataFrame]:
     session_dates = session_date_row.iloc[0, 1 : len(tenors) + 1].tolist()
 
     # Find the accepted bids table to get yields
-    accepted_bids_header = soup.find(lambda tag: tag.name in ["p", "strong"] and C.ACCEPTED_BIDS_KEYWORD in tag.get_text())
+    accepted_bids_header = soup.find(
+        lambda tag: tag.name in ["p", "strong"]
+        and C.ACCEPTED_BIDS_KEYWORD in tag.get_text()
+    )
     if not accepted_bids_header:
         logger.error("Parse Error: Could not find the 'العروض المقبولة' header.")
         return None
     accepted_bids_table = accepted_bids_header.find_next("table")
     if not accepted_bids_table:
-        logger.error("Parse Error: Could not find the table following 'Accepted Bids' header.")
+        logger.error(
+            "Parse Error: Could not find the table following 'Accepted Bids' header."
+        )
         return None
 
     accepted_df = pd.read_html(StringIO(str(accepted_bids_table)))[0]
-    yield_row = accepted_df[accepted_df.iloc[:, 0].str.contains(C.YIELD_ANCHOR_TEXT, na=False, regex=False)]
+    yield_row = accepted_df[
+        accepted_df.iloc[:, 0].str.contains(C.YIELD_ANCHOR_TEXT, na=False, regex=False)
+    ]
 
     if yield_row.empty:
-        logger.error(f"Parse Error: Could not find row containing '{C.YIELD_ANCHOR_TEXT}'.")
+        logger.error(
+            f"Parse Error: Could not find row containing '{C.YIELD_ANCHOR_TEXT}'."
+        )
         return None
-    yields = pd.to_numeric(yield_row.iloc[0, 1 : len(tenors) + 1], errors="coerce").dropna().astype(float).tolist()
+    yields = (
+        pd.to_numeric(yield_row.iloc[0, 1 : len(tenors) + 1], errors="coerce")
+        .dropna()
+        .astype(float)
+        .tolist()
+    )
 
     if not (len(tenors) == len(yields) == len(session_dates)):
-        logger.error(f"Data Mismatch: Found {len(tenors)} tenors, {len(yields)} yields, and {len(session_dates)} dates.")
+        logger.error(
+            f"Data Mismatch: Found {len(tenors)} tenors, {len(yields)} yields, and {len(session_dates)} dates."
+        )
         return None
 
     # **IMPROVEMENT**: Log success with count
     logger.info(f"Successfully parsed data for {len(tenors)} tenors.")
-    final_df = pd.DataFrame({
-        C.TENOR_COLUMN_NAME: tenors,
-        C.YIELD_COLUMN_NAME: yields,
-        C.SESSION_DATE_COLUMN_NAME: session_dates,
-    }).sort_values(by=C.TENOR_COLUMN_NAME).reset_index(drop=True)
+    final_df = (
+        pd.DataFrame(
+            {
+                C.TENOR_COLUMN_NAME: tenors,
+                C.YIELD_COLUMN_NAME: yields,
+                C.SESSION_DATE_COLUMN_NAME: session_dates,
+            }
+        )
+        .sort_values(by=C.TENOR_COLUMN_NAME)
+        .reset_index(drop=True)
+    )
 
     final_df[C.DATE_COLUMN_NAME] = datetime.now().strftime("%Y-%m-%d")
     return final_df
@@ -120,7 +151,7 @@ def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
     """
     # **IMPROVEMENT**: Added retry logic parameters
     retries = 3
-    delay_seconds = 10 
+    delay_seconds = 10
 
     for attempt in range(retries):
         driver = None
@@ -132,7 +163,7 @@ def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
 
             logger.info(f"Navigating to {C.CBE_DATA_URL}")
             driver.get(C.CBE_DATA_URL)
-            
+
             # Increased wait time for robustness
             WebDriverWait(driver, 60).until(
                 EC.presence_of_element_located((By.TAG_NAME, "h2"))
@@ -143,7 +174,9 @@ def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
 
             if final_df is not None:
                 db_manager.save_data(final_df)
-                logger.info("Data successfully scraped and saved. Mission accomplished.")
+                logger.info(
+                    "Data successfully scraped and saved. Mission accomplished."
+                )
                 return  # Exit the function on success
             else:
                 # This error is specific to parsing, might not be recoverable by retry
@@ -156,7 +189,8 @@ def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
             )
         except Exception as e:
             logger.error(
-                f"An unexpected error occurred during attempt {attempt + 1}: {e}", exc_info=True
+                f"An unexpected error occurred during attempt {attempt + 1}: {e}",
+                exc_info=True,
             )
         finally:
             if driver:
@@ -167,7 +201,7 @@ def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
         if attempt < retries - 1:
             logger.info(f"Waiting for {delay_seconds} seconds before next attempt...")
             time.sleep(delay_seconds)
-    
+
     # **IMPROVEMENT**: This code is reached only if all retries fail
     logger.critical(
         f"All {retries} attempts to fetch data from CBE failed. Please check logs for details."

@@ -21,9 +21,7 @@ def calculate_primary_yield(
     """
     # --- IMPROVED VALIDATION ---
     if face_value <= 0 or yield_rate <= 0 or tenor <= 0:
-        return {
-            "error": "القيمة الإسمية، العائد، والمدة يجب أن تكون أرقامًا موجبة."
-        }
+        return {"error": "القيمة الإسمية، العائد، والمدة يجب أن تكون أرقامًا موجبة."}
     if not 0 <= tax_rate <= 100:
         return {"error": "نسبة الضريبة يجب أن تكون بين 0 و 100."}
 
@@ -40,7 +38,7 @@ def calculate_primary_yield(
     )
 
     return {
-        "error": None, # Add error key for consistency
+        "error": None,  # Add error key for consistency
         "purchase_price": purchase_price,
         "gross_return": gross_return,
         "tax_amount": tax_amount,
