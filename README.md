@@ -1,4 +1,6 @@
 ![Python Code Quality Check](https://github.com/Al-QaTari/Treasury_Calculator/actions/workflows/quality_check.yml/badge.svg)
+
+![Scheduled Scrape](https://github.com/Al-QaTari/Treasury_Calculator/actions/workflows/scheduled_scrape.yml/badge.svg)
 #                                                                                                🏦 حاسبة أذون الخزانة المصرية
 
 
