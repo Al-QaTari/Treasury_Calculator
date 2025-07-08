@@ -22,7 +22,7 @@ def test_primary_yield_logic_is_self_consistent():
     tax_rate = 20.0
 
     results = calculate_primary_yield(face_value, yield_rate, tenor, tax_rate)
-    
+
     # نتأكد من عدم وجود خطأ في الحالة الصالحة
     assert results.get("error") is None
 
