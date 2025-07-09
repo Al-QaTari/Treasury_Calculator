@@ -92,7 +92,9 @@ Treasury_Calculator/
 │   └── style.css                 # ملف التنسيقات (CSS) لواجهة المستخدم
 │
 ├── tests/
-│   └── test_calculations.py      # ملف الاختبارات البرمجية للدوال الحسابية
+│   ├── test_calculations.py      # اختبارات الدوال الحسابية
+│   ├── test_cbe_scraper.py       # (جديد) اختبارات تحليل HTML الوهمي
+│   └── test_db_manager.py        # (جديد) اختبارات مدير قاعدة البيانات
 │
 ├── app.py                        # التطبيق الرئيسي وواجهة المستخدم (Streamlit)
 ├── calculations.py               # الدوال الخاصة بالعمليات الحسابية المالية
@@ -105,8 +107,8 @@ Treasury_Calculator/
 ├── .gitignore                    # لتجاهل الملفات غير المرغوب فيها
 ├── LICENSE.txt                   # ملف الترخيص (MIT)
 ├── README.md                     # ملف التوثيق هذا
+├── packages.txt                  # (جديد) ملف الحزم المطلوبة لسيرفر Streamlit
 └── requirements.txt              # قائمة المكتبات المطلوبة لتشغيل المشروع
-```
 
 ---
 
