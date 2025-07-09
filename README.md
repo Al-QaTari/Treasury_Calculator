@@ -151,9 +151,9 @@ Treasury_Calculator/
 
 ---
 
-## المؤلف
+<h2 align="center">✍️ المؤلف</h2>
+<p align="center"><strong>Mohamed AL-QaTri</strong> - <a href="https://github.com/Al-QaTari">GitHub</a></p>
 
-**Mohamed AL-QaTri** - [GitHub](https://github.com/Al-QaTari)
 
 ---
 
