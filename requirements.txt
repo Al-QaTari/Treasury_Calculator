@@ -8,3 +8,4 @@ beautifulsoup4
 webdriver-manager
 lxml
 Flask
+plotly
