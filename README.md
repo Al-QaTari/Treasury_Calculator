@@ -19,7 +19,7 @@
 4. [هيكل المشروع](#-هيكل-المشروع)
 5. [الترخيص](#-الترخيص-license)
 6. [المساهمة](#-المساهمة)
-7. [المؤلف](#-المؤلف)
+7. [المؤلف](#المؤلف)
 
 ---
 
@@ -93,8 +93,8 @@ Treasury_Calculator/
 │
 ├── tests/
 │   ├── test_calculations.py      # اختبارات الدوال الحسابية
-│   ├── test_cbe_scraper.py       # اختبارات تحليل HTML الوهمي
-│   └── test_db_manager.py        # اختبارات مدير قاعدة البيانات
+│   ├── test_cbe_scraper.py       # (جديد) اختبارات تحليل HTML الوهمي
+│   └── test_db_manager.py        # (جديد) اختبارات مدير قاعدة البيانات
 │
 ├── app.py                        # التطبيق الرئيسي وواجهة المستخدم (Streamlit)
 ├── calculations.py               # الدوال الخاصة بالعمليات الحسابية المالية
@@ -109,6 +109,7 @@ Treasury_Calculator/
 ├── README.md                     # ملف التوثيق هذا
 ├── packages.txt                  # (جديد) ملف الحزم المطلوبة لسيرفر Streamlit
 └── requirements.txt              # قائمة المكتبات المطلوبة لتشغيل المشروع
+```
 
 ---
 
@@ -150,7 +151,7 @@ Treasury_Calculator/
 
 ---
 
-## ✍️ المؤلف
+## المؤلف
 
 **Mohamed AL-QaTri** - [GitHub](https://github.com/Al-QaTari)
 
