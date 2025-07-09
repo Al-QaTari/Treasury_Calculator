@@ -93,8 +93,8 @@ Treasury_Calculator/
 │
 ├── tests/
 │   ├── test_calculations.py      # اختبارات الدوال الحسابية
-│   ├── test_cbe_scraper.py       # (جديد) اختبارات تحليل HTML الوهمي
-│   └── test_db_manager.py        # (جديد) اختبارات مدير قاعدة البيانات
+│   ├── test_cbe_scraper.py       # اختبارات تحليل HTML الوهمي
+│   └── test_db_manager.py        # اختبارات مدير قاعدة البيانات
 │
 ├── app.py                        # التطبيق الرئيسي وواجهة المستخدم (Streamlit)
 ├── calculations.py               # الدوال الخاصة بالعمليات الحسابية المالية
