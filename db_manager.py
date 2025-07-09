@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 # --- IMPROVEMENT: Cache the DatabaseManager instance itself ---
 # This prevents re-initializing the connection on every script rerun.
 @st.cache_resource
-def get_db_manager(db_filename: str = C.DB_FILENAME) -> 'DatabaseManager':
+def get_db_manager(db_filename: str = C.DB_FILENAME) -> "DatabaseManager":
     """Factory function to get a cached instance of DatabaseManager."""
     return DatabaseManager(db_filename)
 
@@ -119,7 +119,9 @@ class DatabaseManager:
                 status_message = f"بتاريخ {update_date_dt.strftime('%d-%m-%Y')}"
                 return latest_df, status_message
         except Exception as e:
-            logger.error(f"An error occurred while loading latest data: {e}", exc_info=True)
+            logger.error(
+                f"An error occurred while loading latest data: {e}", exc_info=True
+            )
             return fallback_df, f"خطأ في قاعدة البيانات: {e}"
 
     # --- NEW FUNCTION: To load all data for historical charts ---
