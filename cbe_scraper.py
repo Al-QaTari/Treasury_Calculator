@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 def setup_driver() -> Optional[webdriver.Chrome]:
     """
-    Sets up a Selenium Chrome driver that works with Brave (via Flatpak script) locally 
+    Sets up a Selenium Chrome driver that works with Brave (via Flatpak script) locally
     and with Chromium on the Streamlit Cloud server.
     """
     options = ChromeOptions()
@@ -37,24 +37,33 @@ def setup_driver() -> Optional[webdriver.Chrome]:
     try:
         # Check if running in the server environment
         if os.path.exists("/usr/bin/chromedriver"):
-            logger.info("Server environment detected. Using pre-installed chromedriver.")
+            logger.info(
+                "Server environment detected. Using pre-installed chromedriver."
+            )
             service = Service(executable_path="/usr/bin/chromedriver")
             driver = webdriver.Chrome(service=service, options=options)
         else:
             # Running on a local machine, configure for the Flatpak helper script
-            logger.info("Local environment detected. Configuring for Brave (Flatpak) helper script.")
-            
+            logger.info(
+                "Local environment detected. Configuring for Brave (Flatpak) helper script."
+            )
+
             # **التعديل الرئيسي**: تحديد مسار السكريبت الوسيط الذي أنشأناه
-            brave_script_path = "/home/qatari/Downloads/Programs/Treasury_Calculator-main/run-brave.sh"
+            brave_script_path = (
+                "/home/qatari/Downloads/Programs/Treasury_Calculator-main/run-brave.sh"
+            )
             options.binary_location = brave_script_path
-            
+
             # Selenium Manager will find the correct driver for Brave
             driver = webdriver.Chrome(options=options)
-        
+
         logger.info("Selenium driver initialized successfully.")
         return driver
     except WebDriverException as e:
-        logger.error(f"Failed to initialize Selenium driver. Ensure the helper script exists at '{brave_script_path}' and is executable. Error: {e}", exc_info=True)
+        logger.error(
+            f"Failed to initialize Selenium driver. Ensure the helper script exists at '{brave_script_path}' and is executable. Error: {e}",
+            exc_info=True,
+        )
         return None
 
 
