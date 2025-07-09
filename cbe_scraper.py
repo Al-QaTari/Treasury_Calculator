@@ -1,16 +1,18 @@
-# cbe_scraper.py (النسخة المحسنة مع retry logic و logging)
+# cbe_scraper.py (النسخة النهائية مع مسار سكريبت Flatpak)
 import pandas as pd
 from io import StringIO
 from datetime import datetime
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException, TimeoutException
 from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import logging
-import time  # **IMPROVEMENT**: Import time module for delays
+import time
+import os
 from typing import Optional
 
 import constants as C
@@ -22,10 +24,8 @@ logger = logging.getLogger(__name__)
 
 def setup_driver() -> Optional[webdriver.Chrome]:
     """
-    Sets up a Selenium Chrome driver.
-
-    Returns:
-        An instance of selenium.webdriver.Chrome, or None if setup fails.
+    Sets up a Selenium Chrome driver that works with Brave (via Flatpak script) locally 
+    and with Chromium on the Streamlit Cloud server.
     """
     options = ChromeOptions()
     options.add_argument("--headless")
@@ -35,30 +35,36 @@ def setup_driver() -> Optional[webdriver.Chrome]:
     options.add_argument(f"user-agent={C.USER_AGENT}")
 
     try:
-        # **IMPROVEMENT**: More detailed initial log
-        logger.info("Initializing Selenium Chrome driver with specified options...")
-        driver = webdriver.Chrome(options=options)
+        # Check if running in the server environment
+        if os.path.exists("/usr/bin/chromedriver"):
+            logger.info("Server environment detected. Using pre-installed chromedriver.")
+            service = Service(executable_path="/usr/bin/chromedriver")
+            driver = webdriver.Chrome(service=service, options=options)
+        else:
+            # Running on a local machine, configure for the Flatpak helper script
+            logger.info("Local environment detected. Configuring for Brave (Flatpak) helper script.")
+            
+            # **التعديل الرئيسي**: تحديد مسار السكريبت الوسيط الذي أنشأناه
+            brave_script_path = "/home/qatari/Downloads/Programs/Treasury_Calculator-main/run-brave.sh"
+            options.binary_location = brave_script_path
+            
+            # Selenium Manager will find the correct driver for Brave
+            driver = webdriver.Chrome(options=options)
+        
         logger.info("Selenium driver initialized successfully.")
         return driver
     except WebDriverException as e:
-        logger.error(f"Failed to initialize Selenium driver: {e}", exc_info=True)
+        logger.error(f"Failed to initialize Selenium driver. Ensure the helper script exists at '{brave_script_path}' and is executable. Error: {e}", exc_info=True)
         return None
 
 
 def parse_cbe_html(page_source: str) -> Optional[pd.DataFrame]:
     """
     Parses the HTML source of the CBE page to extract T-bill data.
-
-    Args:
-        page_source (str): The HTML content of the page.
-
-    Returns:
-        A DataFrame with tenor, yield, and session date, or None on failure.
     """
     logger.info("Starting to parse HTML content...")
     soup = BeautifulSoup(page_source, "lxml")
 
-    # Find the main results table to get tenors and session dates
     results_header = soup.find(
         lambda tag: tag.name == "h2" and "النتائج" in tag.get_text()
     )
@@ -85,7 +91,6 @@ def parse_cbe_html(page_source: str) -> Optional[pd.DataFrame]:
         return None
     session_dates = session_date_row.iloc[0, 1 : len(tenors) + 1].tolist()
 
-    # Find the accepted bids table to get yields
     accepted_bids_header = soup.find(
         lambda tag: tag.name in ["p", "strong"]
         and C.ACCEPTED_BIDS_KEYWORD in tag.get_text()
@@ -123,7 +128,6 @@ def parse_cbe_html(page_source: str) -> Optional[pd.DataFrame]:
         )
         return None
 
-    # **IMPROVEMENT**: Log success with count
     logger.info(f"Successfully parsed data for {len(tenors)} tenors.")
     final_df = (
         pd.DataFrame(
@@ -144,12 +148,7 @@ def parse_cbe_html(page_source: str) -> Optional[pd.DataFrame]:
 def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
     """
     Main function to fetch T-bill data using Selenium, parse it, and save it.
-    **Includes retry logic** to handle transient network or page load errors.
-
-    Args:
-        db_manager (DatabaseManager): An instance of the database manager for saving data.
     """
-    # **IMPROVEMENT**: Added retry logic parameters
     retries = 3
     delay_seconds = 10
 
@@ -164,7 +163,6 @@ def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
             logger.info(f"Navigating to {C.CBE_DATA_URL}")
             driver.get(C.CBE_DATA_URL)
 
-            # Increased wait time for robustness
             WebDriverWait(driver, 60).until(
                 EC.presence_of_element_located((By.TAG_NAME, "h2"))
             )
@@ -177,11 +175,9 @@ def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
                 logger.info(
                     "Data successfully scraped and saved. Mission accomplished."
                 )
-                return  # Exit the function on success
+                return
             else:
-                # This error is specific to parsing, might not be recoverable by retry
                 logger.error("Parsing failed. No data was saved for this attempt.")
-                # We can choose to continue to retry, as the page might have loaded incorrectly
 
         except TimeoutException:
             logger.warning(
@@ -197,12 +193,10 @@ def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
                 logger.info("Closing Selenium driver for this attempt.")
                 driver.quit()
 
-        # If we are not on the last attempt, wait before retrying
         if attempt < retries - 1:
             logger.info(f"Waiting for {delay_seconds} seconds before next attempt...")
             time.sleep(delay_seconds)
 
-    # **IMPROVEMENT**: This code is reached only if all retries fail
     logger.critical(
         f"All {retries} attempts to fetch data from CBE failed. Please check logs for details."
     )
