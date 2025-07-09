@@ -1,4 +1,4 @@
-# cbe_scraper.py (النسخة النهائية مع مسار سكريبت Flatpak)
+# cbe_scraper.py (النسخة النهائية والمحسنة باستخدام webdriver-manager)
 import pandas as pd
 from io import StringIO
 from datetime import datetime
@@ -12,8 +12,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import logging
 import time
-import os
 from typing import Optional
+
+# --- IMPROVEMENT: Use webdriver-manager for automatic driver handling ---
+from webdriver_manager.chrome import ChromeDriverManager
 
 import constants as C
 from db_manager import DatabaseManager
@@ -22,10 +24,12 @@ from db_manager import DatabaseManager
 logger = logging.getLogger(__name__)
 
 
+# --- IMPROVEMENT: Simplified and more robust driver setup ---
 def setup_driver() -> Optional[webdriver.Chrome]:
     """
-    Sets up a Selenium Chrome driver that works with Brave (via Flatpak script) locally
-    and with Chromium on the Streamlit Cloud server.
+    Sets up a Selenium Chrome driver automatically using webdriver-manager.
+    This works on local machines (Windows/macOS/Linux) and servers
+    as long as Google Chrome or Chromium is installed.
     """
     options = ChromeOptions()
     options.add_argument("--headless")
@@ -35,33 +39,17 @@ def setup_driver() -> Optional[webdriver.Chrome]:
     options.add_argument(f"user-agent={C.USER_AGENT}")
 
     try:
-        # Check if running in the server environment
-        if os.path.exists("/usr/bin/chromedriver"):
-            logger.info(
-                "Server environment detected. Using pre-installed chromedriver."
-            )
-            service = Service(executable_path="/usr/bin/chromedriver")
-            driver = webdriver.Chrome(service=service, options=options)
-        else:
-            # Running on a local machine, configure for the Flatpak helper script
-            logger.info(
-                "Local environment detected. Configuring for Brave (Flatpak) helper script."
-            )
-
-            # **التعديل الرئيسي**: تحديد مسار السكريبت الوسيط الذي أنشأناه
-            brave_script_path = (
-                "/home/qatari/Downloads/Programs/Treasury_Calculator-main/run-brave.sh"
-            )
-            options.binary_location = brave_script_path
-
-            # Selenium Manager will find the correct driver for Brave
-            driver = webdriver.Chrome(options=options)
-
+        logger.info("Setting up Selenium driver using webdriver-manager...")
+        # webdriver-manager will download the correct driver version and cache it.
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
         logger.info("Selenium driver initialized successfully.")
         return driver
     except WebDriverException as e:
         logger.error(
-            f"Failed to initialize Selenium driver. Ensure the helper script exists at '{brave_script_path}' and is executable. Error: {e}",
+            "Failed to initialize Selenium driver. "
+            "Please ensure Google Chrome or Chromium browser is installed on this system. "
+            f"Error: {e}",
             exc_info=True,
         )
         return None
@@ -158,8 +146,9 @@ def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
     """
     Main function to fetch T-bill data using Selenium, parse it, and save it.
     """
-    retries = 3
-    delay_seconds = 10
+    # --- IMPROVEMENT: Use constants for retries and delays ---
+    retries = C.SCRAPER_RETRIES
+    delay_seconds = C.SCRAPER_RETRY_DELAY_SECONDS
 
     for attempt in range(retries):
         driver = None
@@ -172,7 +161,7 @@ def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
             logger.info(f"Navigating to {C.CBE_DATA_URL}")
             driver.get(C.CBE_DATA_URL)
 
-            WebDriverWait(driver, 60).until(
+            WebDriverWait(driver, C.SCRAPER_TIMEOUT_SECONDS).until(
                 EC.presence_of_element_located((By.TAG_NAME, "h2"))
             )
 
@@ -184,7 +173,7 @@ def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
                 logger.info(
                     "Data successfully scraped and saved. Mission accomplished."
                 )
-                return
+                return  # Exit after success
             else:
                 logger.error("Parsing failed. No data was saved for this attempt.")
 
