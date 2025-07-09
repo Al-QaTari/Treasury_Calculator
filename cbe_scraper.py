@@ -51,9 +51,11 @@ def parse_cbe_html(page_source: str) -> Optional[pd.DataFrame]:
     """
     logger.info("Starting to parse HTML content...")
     soup = BeautifulSoup(page_source, "lxml")
-    
-    results_headers = soup.find_all(lambda tag: tag.name == "h2" and "النتائج" in tag.get_text())
-    
+
+    results_headers = soup.find_all(
+        lambda tag: tag.name == "h2" and "النتائج" in tag.get_text()
+    )
+
     if not results_headers:
         logger.error("Parse Error: Could not find any 'النتائج' (Results) headers.")
         return None
@@ -63,12 +65,19 @@ def parse_cbe_html(page_source: str) -> Optional[pd.DataFrame]:
     for header in results_headers:
         results_table = header.find_next("table")
         if not results_table:
-            logger.warning("Found a 'Results' header but no subsequent table. Skipping.")
+            logger.warning(
+                "Found a 'Results' header but no subsequent table. Skipping."
+            )
             continue
 
         try:
             results_df = pd.read_html(StringIO(str(results_table)))[0]
-            tenors = pd.to_numeric(results_df.columns[1:], errors="coerce").dropna().astype(int).tolist()
+            tenors = (
+                pd.to_numeric(results_df.columns[1:], errors="coerce")
+                .dropna()
+                .astype(int)
+                .tolist()
+            )
             # --- التنسيق المصحح ---
             if not tenors:
                 continue
@@ -77,9 +86,12 @@ def parse_cbe_html(page_source: str) -> Optional[pd.DataFrame]:
             # --- التنسيق المصحح ---
             if session_date_row.empty:
                 continue
-            session_dates = session_date_row.iloc[0, 1:len(tenors) + 1].tolist()
+            session_dates = session_date_row.iloc[0, 1 : len(tenors) + 1].tolist()
 
-            accepted_bids_header = header.find_next(lambda tag: tag.name in ["p", "strong"] and C.ACCEPTED_BIDS_KEYWORD in tag.get_text())
+            accepted_bids_header = header.find_next(
+                lambda tag: tag.name in ["p", "strong"]
+                and C.ACCEPTED_BIDS_KEYWORD in tag.get_text()
+            )
             # --- التنسيق المصحح ---
             if not accepted_bids_header:
                 continue
@@ -89,26 +101,35 @@ def parse_cbe_html(page_source: str) -> Optional[pd.DataFrame]:
                 continue
 
             accepted_df = pd.read_html(StringIO(str(accepted_bids_table)))[0]
-            yield_row = accepted_df[accepted_df.iloc[:, 0].str.contains(C.YIELD_ANCHOR_TEXT, na=False)]
+            yield_row = accepted_df[
+                accepted_df.iloc[:, 0].str.contains(C.YIELD_ANCHOR_TEXT, na=False)
+            ]
             # --- التنسيق المصحح ---
             if yield_row.empty:
                 continue
-            
-            yields = pd.to_numeric(yield_row.iloc[0, 1:len(tenors) + 1], errors="coerce").dropna().astype(float).tolist()
+
+            yields = (
+                pd.to_numeric(yield_row.iloc[0, 1 : len(tenors) + 1], errors="coerce")
+                .dropna()
+                .astype(float)
+                .tolist()
+            )
 
             if len(tenors) == len(yields) == len(session_dates):
-                section_df = pd.DataFrame({
-                    C.TENOR_COLUMN_NAME: tenors,
-                    C.YIELD_COLUMN_NAME: yields,
-                    C.SESSION_DATE_COLUMN_NAME: session_dates,
-                })
+                section_df = pd.DataFrame(
+                    {
+                        C.TENOR_COLUMN_NAME: tenors,
+                        C.YIELD_COLUMN_NAME: yields,
+                        C.SESSION_DATE_COLUMN_NAME: session_dates,
+                    }
+                )
                 all_dataframes.append(section_df)
                 logger.info(f"Successfully parsed data for tenors: {tenors}")
 
         except Exception as e:
             logger.error(f"Error processing a section: {e}", exc_info=True)
             continue
-            
+
     if not all_dataframes:
         logger.error("Could not parse any valid data from any section.")
         return None
@@ -116,7 +137,7 @@ def parse_cbe_html(page_source: str) -> Optional[pd.DataFrame]:
     final_df = pd.concat(all_dataframes, ignore_index=True)
     final_df[C.DATE_COLUMN_NAME] = datetime.now().strftime("%Y-%m-%d")
     final_df = final_df.sort_values(by=C.TENOR_COLUMN_NAME).reset_index(drop=True)
-    
+
     logger.info(f"Successfully parsed a total of {len(final_df)} tenors from the page.")
     return final_df
 
@@ -152,9 +173,14 @@ def fetch_data_from_cbe(db_manager: DatabaseManager) -> None:
                 logger.error("Parsing failed. No data was saved for this attempt.")
 
         except TimeoutException:
-            logger.warning(f"Page load timed out on attempt {attempt + 1}.", exc_info=True)
+            logger.warning(
+                f"Page load timed out on attempt {attempt + 1}.", exc_info=True
+            )
         except Exception as e:
-            logger.error(f"An unexpected error occurred during attempt {attempt + 1}: {e}", exc_info=True)
+            logger.error(
+                f"An unexpected error occurred during attempt {attempt + 1}: {e}",
+                exc_info=True,
+            )
         finally:
             if driver:
                 logger.info("Closing Selenium driver for this attempt.")
