@@ -5,7 +5,6 @@ arabic-reshaper
 python-bidi
 pytz
 beautifulsoup4
-webdriver-manager
 lxml
 Flask
 plotly
